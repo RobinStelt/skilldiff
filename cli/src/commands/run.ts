@@ -1,5 +1,6 @@
 import pc from "picocolors";
 import { detectIsolationTier, assertSkillSourceOutsideWorkDir, tierRequiresOutsideSourceCheck } from "../isolation/index.js";
+import { resolveClaudeBin } from "../isolation/claudeBinary.js";
 import { buildDockerRunArgs } from "../isolation/dockerRun.js";
 import type { Invocation } from "../orchestration/runOrchestrator.js";
 import { runComparison, cleanupWorkDirCopies } from "../orchestration/runOrchestrator.js";
@@ -39,7 +40,7 @@ function parseCheckCommand(cmd?: string): { cmd: string; args: string[] } | null
 }
 
 export async function runCommand(options: RunCommandOptions): Promise<void> {
-  const claudeBin = options.claudeBin ?? "claude";
+  const claudeBin = resolveClaudeBin(options.claudeBin);
 
   // --- 8. Consent screen: only on the very first run ---------------------
   let config = loadOrCreateConfig();

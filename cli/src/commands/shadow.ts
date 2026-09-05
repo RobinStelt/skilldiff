@@ -9,6 +9,7 @@ import { loadOrCreateConfig } from "../config/localConfig.js";
 import { isSkillLinked } from "../isolation/index.js";
 import { detectCheckCommand } from "../category/detectCheckCommand.js";
 import { freshWorkDirCopy } from "../orchestration/runOrchestrator.js";
+import { resolveClaudeBin } from "../isolation/claudeBinary.js";
 
 export function shadowInstallCommand(options: { dir: string }): void {
   installShadowHooks(options.dir);
@@ -36,7 +37,7 @@ export function shadowUserPromptSubmitCommand(): void {
     isSkillLinked,
     detectCheckCommand,
     endpointUrl: process.env.SKILL_AB_ENDPOINT ?? null,
-    claudeBin: process.env.SKILL_AB_CLAUDE_BIN ?? "claude",
+    claudeBin: resolveClaudeBin(process.env.SKILL_AB_CLAUDE_BIN),
   });
 }
 
@@ -53,13 +54,15 @@ export function shadowStopCommand(): void {
       // Detached: the Stop hook must return immediately, not wait for the
       // counterfactual claude call. Requires "skill-ab" on PATH (same
       // prerequisite as the hook commands themselves, see
-      // src/shadow/install.ts) — on Windows this hits the same npm-.cmd-
-      // shim spawn limitation documented for `claude`/`npm` elsewhere in
-      // this codebase (src/isolation/gating.ts, cli/README.md); not
-      // specific to shadow mode, not solved here.
+      // src/shadow/install.ts). `shell: true` here (unlike the `claude`
+      // invocation inside the worker itself) — this spawns by bare command
+      // name, so it needs the shell's own PATH+extension resolution to
+      // find an npm-installed `.cmd` shim on Windows, exactly the class of
+      // problem `resolveClaudeBin` works around for `claude` specifically.
       const child = spawn("skill-ab", ["shadow", "worker-run", sessionId], {
         detached: true,
         stdio: "ignore",
+        shell: true,
       });
       // A spawn failure (e.g. "skill-ab" not on PATH) emits an async
       // 'error' event — without a handler, Node treats that as an
