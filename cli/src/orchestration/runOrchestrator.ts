@@ -52,8 +52,9 @@ export interface OrchestratorResult {
  * same directory, file changes from the first run could influence the
  * second, and the order would skew the result instead of just its display.
  */
-function freshWorkDirCopy(originalWorkDir: string, condition: Condition): string {
-  const copy = mkdtempSync(join(tmpdir(), `skill-ab-${condition}-`));
+/** Exported for src/shadow/worker.ts, which needs the exact same "fresh, independent copy" mechanism outside the normal with/without pair. */
+export function freshWorkDirCopy(originalWorkDir: string, label: string): string {
+  const copy = mkdtempSync(join(tmpdir(), `skill-ab-${label}-`));
   cpSync(originalWorkDir, copy, { recursive: true });
   return copy;
 }

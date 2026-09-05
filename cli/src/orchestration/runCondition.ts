@@ -1,16 +1,35 @@
 import type { RunOutcome } from "@marktplatz/schema";
 import type { ProcessRunner } from "./processRunner.js";
 
+export interface ClaudeUsage {
+  input_tokens?: number;
+  output_tokens?: number;
+  cache_creation_input_tokens?: number;
+  cache_read_input_tokens?: number;
+}
+
 export interface ClaudeUsageJson {
   result?: string;
   is_error?: boolean;
   duration_ms?: number;
-  usage?: {
-    input_tokens?: number;
-    output_tokens?: number;
-    cache_creation_input_tokens?: number;
-    cache_read_input_tokens?: number;
-  };
+  usage?: ClaudeUsage;
+}
+
+/**
+ * Same token-counting convention everywhere it's needed — `claude -p
+ * --output-format json` (this file) AND the transcript-based shadow-mode
+ * measurement (src/shadow/transcriptUsage.ts) MUST sum tokens identically,
+ * otherwise a foreground and a background run of the same task would not
+ * be comparable.
+ */
+export function sumUsageTokens(usage: ClaudeUsage | undefined): number {
+  if (!usage) return 0;
+  return (
+    (usage.input_tokens ?? 0) +
+    (usage.output_tokens ?? 0) +
+    (usage.cache_creation_input_tokens ?? 0) +
+    (usage.cache_read_input_tokens ?? 0)
+  );
 }
 
 /**
@@ -22,13 +41,7 @@ export interface ClaudeUsageJson {
 export function parseClaudeUsage(stdout: string): { tokens: number; durationMs: number } {
   try {
     const parsed = JSON.parse(stdout) as ClaudeUsageJson;
-    const usage = parsed.usage ?? {};
-    const tokens =
-      (usage.input_tokens ?? 0) +
-      (usage.output_tokens ?? 0) +
-      (usage.cache_creation_input_tokens ?? 0) +
-      (usage.cache_read_input_tokens ?? 0);
-    return { tokens, durationMs: parsed.duration_ms ?? 0 };
+    return { tokens: sumUsageTokens(parsed.usage), durationMs: parsed.duration_ms ?? 0 };
   } catch {
     return { tokens: 0, durationMs: 0 };
   }

@@ -6,6 +6,7 @@ export {
   applyTierBGate,
   assertSkillSourceOutsideWorkDir,
   tierRequiresOutsideSourceCheck,
+  isSkillLinked,
 } from "./gating.js";
 export type { IsolatedHome } from "./gating.js";
 export { buildDockerRunArgs, dockerMountPaths } from "./dockerRun.js";

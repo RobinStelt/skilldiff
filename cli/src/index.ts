@@ -3,6 +3,13 @@ import { Command } from "commander";
 import pc from "picocolors";
 import { runCommand } from "./commands/run.js";
 import { watchAddCommand, watchRemoveCommand, watchListCommand } from "./commands/watch.js";
+import {
+  shadowInstallCommand,
+  shadowUninstallCommand,
+  shadowUserPromptSubmitCommand,
+  shadowStopCommand,
+  shadowWorkerRunCommand,
+} from "./commands/shadow.js";
 
 const program = new Command();
 
@@ -88,6 +95,71 @@ watch
       console.error(pc.red("Error:"), err instanceof Error ? err.message : err);
       process.exitCode = 1;
     }
+  });
+
+const shadow = program
+  .command("shadow")
+  .description(
+    "Background comparison runs triggered by Claude Code hooks (opt-in per project) — " +
+      "see cli/README.md, \"Shadow mode\"",
+  );
+
+shadow
+  .command("install")
+  .description("Register the shadow-mode hooks in a project's .claude/settings.json (idempotent, additive)")
+  .requiredOption("--dir <path>", "Project directory")
+  .action((opts) => {
+    try {
+      shadowInstallCommand({ dir: opts.dir });
+    } catch (err) {
+      console.error(pc.red("Error:"), err instanceof Error ? err.message : err);
+      process.exitCode = 1;
+    }
+  });
+
+shadow
+  .command("uninstall")
+  .description("Remove the shadow-mode hooks from a project's .claude/settings.json")
+  .requiredOption("--dir <path>", "Project directory")
+  .action((opts) => {
+    try {
+      shadowUninstallCommand({ dir: opts.dir });
+    } catch (err) {
+      console.error(pc.red("Error:"), err instanceof Error ? err.message : err);
+      process.exitCode = 1;
+    }
+  });
+
+// The three commands below are invoked BY Claude Code hooks / by
+// shadowStopCommand's own detached spawn — not meant to be run by hand.
+shadow
+  .command("user-prompt-submit")
+  .description("[internal, invoked by the UserPromptSubmit hook]")
+  .action(() => {
+    try {
+      shadowUserPromptSubmitCommand();
+    } catch {
+      // Hook commands must never make Claude Code's own turn fail because
+      // of a shadow-mode bug — fail silently, exit 0.
+    }
+  });
+
+shadow
+  .command("stop")
+  .description("[internal, invoked by the Stop hook]")
+  .action(() => {
+    try {
+      shadowStopCommand();
+    } catch {
+      // Same reasoning as user-prompt-submit above.
+    }
+  });
+
+shadow
+  .command("worker-run <sessionId>")
+  .description("[internal, spawned detached by the Stop hook]")
+  .action(async (sessionId: string) => {
+    await shadowWorkerRunCommand(sessionId);
   });
 
 program.parseAsync(process.argv);

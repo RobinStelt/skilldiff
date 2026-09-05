@@ -227,15 +227,18 @@ Unterschied je nach Herkunft der Skills:**
    (das würde den Effekt eines Bündels statt eines einzelnen Skills messen,
    Abschnitt 4/5). Verteilt Datenerhebung organisch über alle genutzten
    Skills, ohne dass der Nutzer das pro Lauf entscheiden muss.
-
-**Noch nicht umgesetzt, als nächster Schritt vorgesehen:**
-3. **Asynchroner Schattenlauf statt synchronem Doppel-Lauf:** Ein
-   `Stop`-Hook merkt sich Aufgabe und Ausgangszustand vor der eigentlichen
-   (einmaligen, mit Skill durchgeführten) Arbeit und startet den
-   Gegenlauf danach automatisch im Hintergrund — kein manueller zweiter
-   Befehl, kein Warten auf das Ergebnis. Ändert nichts an den echten
-   Kosten/der Rechenzeit des Gegenlaufs, nur daran, dass der Nutzer sie
-   nicht mehr aktiv anstoßen und abwarten muss.
+3. **Asynchroner Schattenlauf statt synchronem Doppel-Lauf** (`skill-ab
+   shadow install/uninstall`, opt-in pro Projekt): Ein `UserPromptSubmit`-Hook
+   merkt sich Aufgabe, Verzeichnis-Snapshot und ob der beobachtete Skill
+   gerade wirklich verlinkt ist (bestimmt die tatsächliche Bedingung des
+   echten Vordergrund-Zugs, nicht angenommen). Ein `Stop`-Hook liest Tokens
+   aus dem Transkript und die Zeit seit Prompt-Absenden — dann läuft der
+   Gegenlauf für dieselbe Aufgabe still im Hintergrund, ohne den Nutzer zu
+   blockieren. Bleibt bei den echten 2 `claude`-Aufrufen pro verglichener
+   Aufgabe (nicht 3) — kein Transkript-Parsing für den Gegenlauf nötig, nur
+   für die Live-Zug-Messung, mit ehrlichem Abbruch statt erfundener Nullen,
+   falls das nicht gelingt. Details/Grenzen: `cli/README.md`, "Shadow mode".
+**Noch nicht umgesetzt:**
 4. **Sampling statt jeder Aufgabe:** Nicht jeder Lauf wird verglichen,
    sondern nur eine Stichprobe (z.B. jede 5.–10. Aufgabe) — über viele
    Nutzer/Sessions kommt trotzdem genug Datenvolumen zusammen, der

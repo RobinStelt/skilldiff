@@ -49,17 +49,66 @@ looks for a real `npm test` script, a pytest project (`pyproject.toml`,
 rather than guessing wrong. An explicit `--check` always overrides
 detection.
 
-Deliberately NOT addressed here: turning the required second ("without
-skill") run into something that doesn't cost real time/tokens. That
-run is the actual counterfactual the whole comparison depends on — there
-is no way to shrink it without giving up the causal claim ("real usage,
-not vibes") the project is built on. What's reduced is everything
-*around* it: flags to remember, and the decision of which skill to test
-today when several are in normal use.
+The required second ("without skill") run can't be shrunk without giving
+up the causal claim ("real usage, not vibes") the project is built on —
+see "Shadow mode" below for what's actually done about that: not removing
+the cost, moving it off the interactive critical path.
 
 Without `--endpoint`, the upload runs against a local mock
-(`.skill-ab-mock-uploads/<run_id>.json`) — Phase 3 (the real backend
-endpoint) doesn't exist yet.
+(`.skill-ab-mock-uploads/<run_id>.json`).
+
+### Shadow mode — comparisons that happen automatically, off to the side
+
+Opt-in, per project (never global, never silently enabled):
+
+```bash
+skill-ab shadow install --dir /path/to/your/project
+```
+
+This registers two Claude Code hooks
+(`<project>/.claude/settings.json` — see `src/shadow/install.ts`, safe to
+run again, and it never touches your project's other settings/hooks):
+
+- **`UserPromptSubmit`**: if you have at least one watched skill
+  (`skill-ab watch add`), picks ONE at random, snapshots the project
+  directory as it is right now, and records whether that skill is
+  currently linked into the project (i.e., whether your upcoming real
+  turn will actually run with or without it — never assumed).
+- **`Stop`**: reads the real turn's token usage from the session
+  transcript and computes its wall-clock duration, then spawns a
+  **detached background process** that replays the exact same task from
+  the snapshot in the OPPOSITE condition — a real, isolated `claude` call,
+  same isolation guarantees as `run` (Tier A/B/C, fresh `$HOME` with only
+  the credentials file copied in, see `src/isolation/gating.ts`) — and
+  uploads the completed comparison. None of this blocks you; your real
+  work already finished before the hook even fires.
+
+Net effect: **2** real `claude` calls per compared task (your real
+interactive one + 1 silent background one), same as manually running
+`skill-ab run`, but nothing to remember or wait for.
+
+**Known, disclosed limitations, not silently glossed over:**
+- If the watched skill isn't linked at the *project* level (e.g. it's a
+  personal/global skill), presence can't be determined from `cwd` alone —
+  that turn is skipped rather than guessed.
+- If the transcript's usage can't be parsed (undocumented, version-
+  dependent format — `src/shadow/transcriptUsage.ts`), the turn is
+  discarded rather than uploaded with a fabricated `0`.
+- `order_randomized` is always `false` for shadow-mode results — the real
+  turn always comes first, unlike `run`'s actual randomization.
+- The background worker is spawned as `skill-ab shadow worker-run ...`,
+  which needs `skill-ab` on `PATH` (a global install/link) — on Windows
+  this can hit the same npm-`.cmd`-shim spawn limitation already noted for
+  `claude`/`npm` elsewhere in this document; not shadow-mode-specific, not
+  solved here.
+- Not part of the automated test suite beyond `resolveConditionOutcomes`
+  and the hook decision logic (`test/shadow/`) — the actual background
+  `claude` call is the same "verified manually, not automated" situation
+  as `run` itself (see "Tests" below).
+
+```bash
+skill-ab shadow uninstall --dir /path/to/your/project   # removes exactly what install added
+```
 
 ## Architecture
 
@@ -73,6 +122,7 @@ src/
   consent/       One-time consent screen
   config/        Local, persistent config (~/.skill-ab/config.json)
   upload/        Signature + validation (schema package) + submit/mock
+  shadow/        Shadow mode: hook decision logic, state store, transcript-usage parsing, background worker
   buildRunResult.ts  Assembles the final, typed RunResult
 ```
 
@@ -107,14 +157,17 @@ npm run typecheck
 npm test
 ```
 
-56 tests (vitest) cover: randomization, category/size-bucket/check-command
+77 tests (vitest) cover: randomization, category/size-bucket/check-command
 detection, readability/complexity heuristics, security-delta rules, the
 link capability test, `RunResult` assembly **validated against the real
 schema package**, mock upload (including rejecting invalid payloads before
-any write/send), watched-skill persistence, and local config persistence
+any write/send), watched-skill persistence, local config persistence
 (including loading a config.json written before the `watchedSkills` field
-existed). Real `claude` calls go through an injectable `ProcessRunner`
-interface and are replaced by fakes in tests
+existed), shadow-mode hook install/uninstall (`.claude/settings.json`
+merging, never disturbing unrelated entries), the UserPromptSubmit/Stop
+decision logic, and transcript-usage parsing (including the "can't
+measure, don't fake zero" fallback). Real `claude` calls go through an
+injectable `ProcessRunner` interface and are replaced by fakes in tests
 — a real end-to-end run was verified once manually against the local
 `claude` installation (see commit history), but isn't part of the
 automated test suite (would incur real API cost on every test run).

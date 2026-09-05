@@ -58,6 +58,16 @@ function skillLinkPath(workDir: string, skillId: string): string {
   return join(workDir, ".claude", "skills", skillId);
 }
 
+/**
+ * Is `skillId` currently linked into `workDir` (project-level)? Used by
+ * shadow mode (src/shadow/hooks.ts) to determine, without guessing, which
+ * condition a real foreground turn actually represents — does NOT verify
+ * the link points at any particular source, just that something is there.
+ */
+export function isSkillLinked(workDir: string, skillId: string): boolean {
+  return existsSync(skillLinkPath(workDir, skillId));
+}
+
 function removeLinkIfPresent(linkPath: string): void {
   if (!existsSync(linkPath)) return;
   const stat = lstatSync(linkPath);
