@@ -14,6 +14,7 @@ function account(overrides: Partial<Account> = {}): Account {
     createdAt: new Date("2026-01-01T00:00:00Z"),
     uploadCount: 0,
     flagged: false,
+    isSeedAccount: false,
     ...overrides,
   };
 }

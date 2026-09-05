@@ -19,8 +19,11 @@ npm run dev
 - **`src/ingestion/`** — Validierung → Signaturprüfung → Duplikat-Check → Speicherung (`POST /v1/run-results`).
 - **`src/aggregation/`** — Median-Delta + Bootstrap-Konfidenzintervall + Sample-Size, strikt pro Skill+Kategorie getrennt (`src/aggregation/metrics.ts`), plus Reputations-/Tier-/Build-Hash-Gewichtung (`src/aggregation/weighting.ts`).
 - **`src/anomaly/`** — Batch-Scan (`npm run migrate` einmalig, danach `scripts/run-anomaly-scan.ts` per Cron), markiert statt löscht.
-- **`src/api/`** — `GET /v1/skills/:skillId/metrics`, `GET /v1/export.json`, `GET /v1/export.csv`.
+- **`src/api/`** — zwei Oberflächen auf derselben Aggregationslogik:
+  - `/v1/*`: internes/CLI-seitiges API aus Briefing 04 (`GET /v1/skills/:skillId/metrics`, `GET /v1/export.json`, `GET /v1/export.csv`).
+  - `/api/*`: der öffentliche Vertrag, gegen den `frontend/` (Phase 4) gebaut ist (`src/api/publicApi.ts`) — `GET /api/skills`, `GET /api/skills/:skillId`, `GET /api/skills/:skillId/export?category=`. Nachträglich ergänzt, um die zwischen Phase 3 und Phase 4 parallel entstandene Vertragslücke zu schließen (siehe `frontend/README.md`, war dort als "Backend gap" dokumentiert).
 - **`db/migrations/001_init.sql`** — Schema + Rollen/Grants für die `content_ref`-Trennung (briefing Punkt 2).
+- **`db/migrations/002_seed_accounts_and_public_api.sql`** — `accounts.is_seed_account`-Flag (Briefing 06 Punkt 4, gesetzt über `scripts/mark-seed-account.ts`, nie über HTTP).
 
 ## Zwei offene Punkte aus dieser Phase — nicht in `backend/` lösbar
 

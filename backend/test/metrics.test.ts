@@ -4,6 +4,8 @@ import { aggregateSkillCategory, type StoredRunResult } from "../src/aggregation
 function baseRecord(overrides: Partial<StoredRunResult> = {}): StoredRunResult {
   return {
     runId: "r1",
+    accountId: "acct_1",
+    isSeedAccount: false,
     skillId: "skill_x",
     category: "debugging",
     isolationTier: "A",
@@ -66,5 +68,32 @@ describe("aggregateSkillCategory", () => {
     ];
     const result = aggregateSkillCategory("skill_x", "debugging", records, { iterations: 20 });
     expect(result.tokensDelta.medianDelta).toBe(10);
+  });
+
+  it("counts records by isolation tier and distinct accounts", () => {
+    const records = [
+      baseRecord({ runId: "r1", accountId: "acct_a", isolationTier: "A" }),
+      baseRecord({ runId: "r2", accountId: "acct_a", isolationTier: "A" }),
+      baseRecord({ runId: "r3", accountId: "acct_b", isolationTier: "B" }),
+      baseRecord({ runId: "r4", accountId: "acct_c", isolationTier: "C" }),
+    ];
+    const result = aggregateSkillCategory("skill_x", "debugging", records, { iterations: 20 });
+    expect(result.isolationTierBreakdown).toEqual({ A: 2, B: 1, C: 1 });
+    expect(result.distinctAccountCount).toBe(3);
+  });
+
+  it("flags seedDataMajority only once more than half the sample is from seed accounts", () => {
+    const majoritySeed = [
+      baseRecord({ runId: "r1", isSeedAccount: true }),
+      baseRecord({ runId: "r2", isSeedAccount: true }),
+      baseRecord({ runId: "r3", isSeedAccount: false }),
+    ];
+    const minoritySeed = [
+      baseRecord({ runId: "r1", isSeedAccount: true }),
+      baseRecord({ runId: "r2", isSeedAccount: false }),
+      baseRecord({ runId: "r3", isSeedAccount: false }),
+    ];
+    expect(aggregateSkillCategory("skill_x", "debugging", majoritySeed).seedDataMajority).toBe(true);
+    expect(aggregateSkillCategory("skill_x", "debugging", minoritySeed).seedDataMajority).toBe(false);
   });
 });

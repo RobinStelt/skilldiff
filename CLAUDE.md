@@ -24,5 +24,5 @@ Arbeitsnotizen des Projektinhabers, kein Quellcode, und werden nicht
 
 - `schema/` — Vertragsschicht (Zod-Schema + TS-Typen + Validierung), Phase 1
 - `cli/` — CLI-Kern (`skill-ab run`), Phase 2
-- `backend/` — Ingestion, Aggregation, Reputationsgewichtung, Anomalie-Flagging, Phase 3 (wird parallel entwickelt, noch keine HTTP-API)
-- `frontend/` — öffentliche Marktplatz-Ansicht, Phase 4 (gegen einen dokumentierten API-Vertrag gebaut, s. `frontend/README.md`, solange Phase 3 keine HTTP-Endpunkte liefert)
+- `backend/` — Ingestion, Aggregation, Reputationsgewichtung, Anomalie-Flagging, Phase 3. Zwei API-Oberflächen: `/v1/*` (CLI-Ingestion, intern) und `/api/*` (öffentlicher Vertrag für `frontend/`, s. `backend/src/api/publicApi.ts`)
+- `frontend/` — öffentliche Marktplatz-Ansicht, Phase 4, seit Phase 5 gegen den echten Backend-`/api/*`-Endpoint verdrahtet (`VITE_BACKEND_URL`, s. `frontend/README.md`)

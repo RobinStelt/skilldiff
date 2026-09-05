@@ -5,6 +5,8 @@ export interface Config {
   contentWriterDatabaseUrl: string;
   /** cli_build_hash values treated as "official, unmodified" (briefing point 4). */
   trustedCliBuildHashes: Set<string>;
+  /** Points at the aggregation source on GitHub (briefing 05 point 6) — update once the repo has a real remote. */
+  aggregationSourceUrl: string;
 }
 
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
@@ -23,5 +25,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
         .map((hash) => hash.trim())
         .filter((hash) => hash.length > 0),
     ),
+    aggregationSourceUrl:
+      env.AGGREGATION_SOURCE_URL ?? "https://github.com/example-org/marktplatz/tree/main/backend/src/aggregation",
   };
 }

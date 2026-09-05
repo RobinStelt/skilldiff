@@ -13,6 +13,9 @@ describe("toCsv", () => {
         tokensDelta: { medianDelta: 500, confidenceInterval: { low: 100, high: 900 }, sampleSize: 12 },
         durationDelta: { medianDelta: 30, confidenceInterval: { low: 10, high: 50 }, sampleSize: 12 },
         securityDelta: { medianDelta: 2, confidenceInterval: { low: 0, high: 4 }, sampleSize: 8 },
+        isolationTierBreakdown: { A: 10, B: 2, C: 0 },
+        distinctAccountCount: 6,
+        seedDataMajority: false,
       },
     ];
     const csv = toCsv(metrics);
@@ -35,6 +38,9 @@ describe("toCsv", () => {
         tokensDelta: { medianDelta: 5, confidenceInterval: null, sampleSize: 4 },
         durationDelta: { medianDelta: 1, confidenceInterval: null, sampleSize: 4 },
         securityDelta: null,
+        isolationTierBreakdown: { A: 0, B: 4, C: 0 },
+        distinctAccountCount: 2,
+        seedDataMajority: false,
       },
     ];
     expect(() => toCsv(metrics)).not.toThrow();

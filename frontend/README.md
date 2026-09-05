@@ -4,56 +4,29 @@ Implements `05-marktplatz-phase4-frontend.md`. Full context:
 `../skill-ab-marktplatz-plan.md`, sections 5 (evaluation dimensions) and 7
 (residual risks, especially the trust-through-transparency principle).
 
-## Status: built against a documented API contract, not the real backend
+## Status: wired to the real backend
 
-The backend (Phase 3, `../backend`) doesn't expose an HTTP layer yet — only
-the internal `src/aggregation/*`, `src/accounts/*`, and `src/anomaly/*`
-modules exist, no `src/server.ts`. Rather than block Phase 4 on that (backend
-work is happening in parallel), this app is built and fully tested against
-`src/api/types.ts` — a contract that mirrors the backend's existing
-`DeltaStats`/`SkillCategoryMetrics` shapes field-for-field, plus the fields
-this phase's briefing needs that aggregation doesn't compute yet.
+Originally built against a documented contract (`src/api/types.ts`) while
+the backend's HTTP layer didn't exist yet — see git history for that phase.
+The backend (`../backend`) now serves that exact contract under `/api/*`
+(`backend/src/api/publicApi.ts`, `backend/src/app.ts`), verified end-to-end
+against a real Postgres + real HTTP requests through the browser, including
+the seed-data badge, isolation-tier breakdown, account-diversity note, and
+per-category export link.
 
-`src/main.tsx` wires up `createMockApiClient` (in-memory, backed by
-`src/api/fixtures.ts`) so the app runs and every acceptance criterion below
-is testable today. `src/api/client.ts` (`createHttpApiClient`) is the real
-HTTP client for once the backend ships — swapping it in is a one-line change
-in `main.tsx`.
-
-### Backend gap — what `../backend` still needs to add
-
-1. **`GET /api/skills?category=<category>&cursor=<cursor>`** and
-   **`GET /api/skills/:skillId`** — an HTTP layer around
-   `aggregateSkillCategory` (`backend/src/aggregation/metrics.ts`). The
-   `DeltaStats`/`SkillCategoryMetrics` shapes already match what this
-   frontend expects.
-2. **Isolation-tier breakdown per skill+category** (`{ A, B, C }` counts) —
-   `run_results.isolation_tier` is already in the schema
-   (`backend/db/migrations/001_init.sql`), but no aggregation query groups by
-   it yet.
-3. **Distinct contributing account count per skill+category** — same
-   situation: `account_id` is on every row, just not counted distinctly
-   anywhere yet.
-4. **A `seedDataMajority` flag per skill+category** — depends on Phase 6
-   (pre-fill) tagging its inserted rows so they're distinguishable later;
-   not yet decided how in either phase's briefing.
-5. **A raw-data export endpoint** (`GET /api/skills/:skillId/export?category=`)
-   returning exactly the records behind one skill+category aggregate —
-   briefing point 6 requires this to be spot-checkable by hand.
-6. **An `aggregationSourceUrl`** — just the repo link to
-   `backend/src/aggregation`, no new code needed, just wiring it into the
-   response.
-
-None of this changes `aggregateSkillCategory`'s existing logic — it's
-additive.
+`src/main.tsx` uses `createHttpApiClient` (`src/api/client.ts`) against
+`VITE_BACKEND_URL` (`.env.example`, defaults to `http://localhost:3000`).
+`createMockApiClient` + `src/api/fixtures.ts` still back every test in this
+package (no live backend needed to run `npm test`).
 
 ## Running
 
 ```bash
 npm install
-npm run dev       # mock data, see src/api/fixtures.ts
+cp .env.example .env   # point VITE_BACKEND_URL at your backend if not localhost:3000
+npm run dev             # needs ../backend running (see ../backend/README.md)
 npm run typecheck
-npm test
+npm test                # uses fixtures, no backend needed
 ```
 
 ## How each acceptance criterion is met

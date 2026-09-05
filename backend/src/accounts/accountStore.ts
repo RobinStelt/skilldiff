@@ -7,6 +7,8 @@ export interface Account {
   createdAt: Date;
   uploadCount: number;
   flagged: boolean;
+  /** Briefing 06 point 4 — a known Phase-5 pre-fill account. Separate from `flagged`; never influences the reputation weight itself. */
+  isSeedAccount: boolean;
 }
 
 export type RegisterStatus = "created" | "already_registered_same_secret" | "already_registered_different_secret";
@@ -31,6 +33,8 @@ export interface AccountStore {
   register(accountId: string, signingSecret: string): Promise<RegisterResult>;
   incrementUploadCount(accountId: string): Promise<void>;
   setFlagged(accountId: string, flagged: boolean): Promise<void>;
+  /** Admin-only operation (scripts/mark-seed-account.ts) — never exposed over HTTP. */
+  setSeedAccount(accountId: string, isSeedAccount: boolean): Promise<void>;
   get(accountId: string): Promise<Account | null>;
 }
 
@@ -40,6 +44,7 @@ function rowToAccount(row: {
   created_at: Date;
   upload_count: number;
   flagged: boolean;
+  is_seed_account: boolean;
 }): Account {
   return {
     accountId: row.account_id,
@@ -47,6 +52,7 @@ function rowToAccount(row: {
     createdAt: row.created_at,
     uploadCount: row.upload_count,
     flagged: row.flagged,
+    isSeedAccount: row.is_seed_account,
   };
 }
 
@@ -56,6 +62,8 @@ function secretsMatch(a: string, b: string): boolean {
   if (bufA.length !== bufB.length) return false;
   return timingSafeEqual(bufA, bufB);
 }
+
+const SELECT_COLUMNS = "account_id, signing_secret, created_at, upload_count, flagged, is_seed_account";
 
 export function createPgAccountStore(pool: Pool): AccountStore {
   return {
@@ -67,17 +75,15 @@ export function createPgAccountStore(pool: Pool): AccountStore {
         `INSERT INTO accounts (account_id, signing_secret)
          VALUES ($1, $2)
          ON CONFLICT (account_id) DO NOTHING
-         RETURNING account_id, signing_secret, created_at, upload_count, flagged`,
+         RETURNING ${SELECT_COLUMNS}`,
         [accountId, signingSecret],
       );
       if (inserted.rows[0]) {
         return { account: rowToAccount(inserted.rows[0]), status: "created" };
       }
-      const { rows } = await pool.query(
-        `SELECT account_id, signing_secret, created_at, upload_count, flagged
-         FROM accounts WHERE account_id = $1`,
-        [accountId],
-      );
+      const { rows } = await pool.query(`SELECT ${SELECT_COLUMNS} FROM accounts WHERE account_id = $1`, [
+        accountId,
+      ]);
       const row = rows[0];
       if (!row) throw new Error(`account ${accountId} vanished between insert and read`);
       const account = rowToAccount(row);
@@ -99,12 +105,17 @@ export function createPgAccountStore(pool: Pool): AccountStore {
       await pool.query(`UPDATE accounts SET flagged = $2 WHERE account_id = $1`, [accountId, flagged]);
     },
 
+    async setSeedAccount(accountId, isSeedAccount) {
+      await pool.query(`UPDATE accounts SET is_seed_account = $2 WHERE account_id = $1`, [
+        accountId,
+        isSeedAccount,
+      ]);
+    },
+
     async get(accountId) {
-      const { rows } = await pool.query(
-        `SELECT account_id, signing_secret, created_at, upload_count, flagged
-         FROM accounts WHERE account_id = $1`,
-        [accountId],
-      );
+      const { rows } = await pool.query(`SELECT ${SELECT_COLUMNS} FROM accounts WHERE account_id = $1`, [
+        accountId,
+      ]);
       return rows[0] ? rowToAccount(rows[0]) : null;
     },
   };
@@ -117,7 +128,14 @@ export function createInMemoryAccountStore(seed: Account[] = []): AccountStore {
     async register(accountId, signingSecret) {
       const existing = accounts.get(accountId);
       if (!existing) {
-        const account: Account = { accountId, signingSecret, createdAt: new Date(), uploadCount: 0, flagged: false };
+        const account: Account = {
+          accountId,
+          signingSecret,
+          createdAt: new Date(),
+          uploadCount: 0,
+          flagged: false,
+          isSeedAccount: false,
+        };
         accounts.set(accountId, account);
         return { account, status: "created" };
       }
@@ -135,6 +153,10 @@ export function createInMemoryAccountStore(seed: Account[] = []): AccountStore {
     async setFlagged(accountId, flagged) {
       const account = accounts.get(accountId);
       if (account) account.flagged = flagged;
+    },
+    async setSeedAccount(accountId, isSeedAccount) {
+      const account = accounts.get(accountId);
+      if (account) account.isSeedAccount = isSeedAccount;
     },
     async get(accountId) {
       return accounts.get(accountId) ?? null;

@@ -3,6 +3,9 @@ import { computeDeltaStats, type DeltaStats } from "./stats.js";
 
 export interface StoredRunResult {
   runId: string;
+  accountId: string;
+  /** Briefing 06 point 4 — drives `seedDataMajority` below, kept separate from reputation/weight. */
+  isSeedAccount: boolean;
   skillId: string;
   category: Category;
   isolationTier: IsolationTier;
@@ -10,6 +13,12 @@ export interface StoredRunResult {
   withSkill: RunOutcome;
   withoutSkill: RunOutcome;
   securityDelta: SecurityDelta;
+}
+
+export interface IsolationTierBreakdown {
+  A: number;
+  B: number;
+  C: number;
 }
 
 export interface SkillCategoryMetrics {
@@ -31,6 +40,12 @@ export interface SkillCategoryMetrics {
    * code-adjacent).
    */
   securityDelta: DeltaStats | null;
+  /** Raw counts by isolation tier — transparency requirement from the frontend contract, not derived from the weight. */
+  isolationTierBreakdown: IsolationTierBreakdown;
+  /** Distinct contributing accounts — the "selektive Aufgabenwahl"/diversity signal from plan section 7. */
+  distinctAccountCount: number;
+  /** True when more than half of this slice's sample_size came from Phase-5 seed accounts (briefing 06 point 4). */
+  seedDataMajority: boolean;
 }
 
 /** critical > high > medium > low — same relative weighting used for the SAST-scan delta everywhere else in this project. */
@@ -87,6 +102,14 @@ export function aggregateSkillCategory(
     weight: r.weight,
   }));
 
+  const isolationTierBreakdown: IsolationTierBreakdown = { A: 0, B: 0, C: 0 };
+  for (const r of records) isolationTierBreakdown[r.isolationTier] += 1;
+
+  const distinctAccountCount = new Set(records.map((r) => r.accountId)).size;
+
+  const seedCount = records.filter((r) => r.isSeedAccount).length;
+  const seedDataMajority = records.length > 0 && seedCount / records.length > 0.5;
+
   return {
     skillId,
     category,
@@ -95,5 +118,8 @@ export function aggregateSkillCategory(
     tokensDelta: computeDeltaStats(tokensValues, bootstrapOptions),
     durationDelta: computeDeltaStats(durationValues, bootstrapOptions),
     securityDelta: securityValues.length > 0 ? computeDeltaStats(securityValues, bootstrapOptions) : null,
+    isolationTierBreakdown,
+    distinctAccountCount,
+    seedDataMajority,
   };
 }

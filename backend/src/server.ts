@@ -5,6 +5,7 @@ import { createPgRunResultRepo } from "./ingestion/runResultRepo.js";
 import { createPgContentRepo } from "./ingestion/contentRepo.js";
 import { getSkillMetrics } from "./api/skillMetrics.js";
 import { getAllSkillMetrics } from "./api/export.js";
+import { getRawExportRecords, getSkillDetail, listSkills } from "./api/publicApi.js";
 import { buildApp } from "./app.js";
 
 async function main(): Promise<void> {
@@ -18,6 +19,9 @@ async function main(): Promise<void> {
     trustedHashes: config.trustedCliBuildHashes,
     getSkillMetrics: (skillId) => getSkillMetrics(pools.app, skillId),
     getAllSkillMetrics: () => getAllSkillMetrics(pools.app),
+    listSkills: (options) => listSkills(pools.app, options),
+    getSkillDetail: (skillId) => getSkillDetail(pools.app, skillId, config.aggregationSourceUrl),
+    getRawExportRecords: (skillId, category) => getRawExportRecords(pools.app, skillId, category),
   });
 
   const shutdown = async () => {
