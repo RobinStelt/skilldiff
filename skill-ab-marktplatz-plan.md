@@ -181,9 +181,65 @@ Kein Gesamtscore. Vier parallele, getrennt sichtbare Klassen, weil ein Skill in 
 
 - **Client-Manipulation:** Open-Source-CLI kann gepatcht werden, um nur günstige Ergebnisse zu senden. Gemildert durch Build-Hash-Abgleich und lokale Signatur — nicht eliminierbar.
 - **Selektive Aufgabenwahl:** Nutzer testet gezielt nur Aufgaben, bei denen der eigene Skill gut abschneidet. Gemildert durch Kategorie-Heterogenitäts-Check und sichtbare Account-Diversität pro Skill.
-- **Kaltstart:** Kritische Masse an Nutzern nötig, bevor Daten aussagekräftig sind. Phase 5 mildert den ersten Eindruck, löst das Henne-Ei-Problem aber nicht vollständig.
+- **Kaltstart:** Kritische Masse an Nutzern nötig, bevor Daten aussagekräftig sind. Phase 5 mildert den ersten Eindruck, löst das Henne-Ei-Problem aber nicht vollständig. Siehe Abschnitt 7.1 für die Strategie, Teilnahme-Aufwand pro Nutzer zu senken — das eigentliche Henne-Ei-Problem (kritische Masse an Nutzern) bleibt davon unberührt.
 - **Rechtliches:** Nutzer verarbeiten ggf. urheberrechtlich geschützten Firmencode über das CLI. Klare Nutzungsbedingungen nötig, die zusichern, dass keine Inhalte gespeichert werden — sonst bleiben gerade die wertvollsten Teilnehmer (echter Produktivcode) fern.
 - **Plattform-Sandbox:** Durch das gestufte Isolationsmodell (Abschnitt 3.2) kein Blocker mehr — schwächer isolierte Ergebnisse fließen ein, nur schwächer gewichtet.
+
+### 7.1 Kaltstart-Strategie: Teilnahme-Aufwand senken
+
+Ergänzt während Phase 6 (Vorbefüllung), als der eigentliche Aufwand einer
+echten Teilnahme (nicht nur "wie baue ich das CLI", sondern "warum würde
+das jemand regelmäßig nutzen") konkret spürbar wurde. Kernfrage: Wie
+bekommen wir Nutzer dazu, uns Daten zu liefern, ohne dass sie zu viel
+Aufwand haben — insbesondere wenn sie im Alltag mehrere Skills gleichzeitig
+nutzen?
+
+**Was sich NICHT senken lässt, ohne das Grundprinzip aufzugeben:** Der
+echte Gegenlauf ("ohne Skill") ist zwingend ein zweiter, unabhängiger
+Claude-Aufruf derselben Aufgabe — das ist genau das, was das Projekt von
+Stars/Sicherheitsscans anderer Marktplätze unterscheidet (Abschnitt 1:
+"echte Nutzung, kein Rating"). Jede Kaltstart-Maßnahme reduziert Aufwand
+*um* diesen Kern herum, nie den Kern selbst.
+
+**Mehrere gleichzeitig genutzte Skills sind kein Blocker, aber ein
+Unterschied je nach Herkunft der Skills:**
+- Projekt-eigene Skills (im Repo eingecheckt, z.B. unter `.claude/skills/`)
+  bleiben in beiden Bedingungen automatisch konstant — die Vergleichslogik
+  kopiert das Arbeitsverzeichnis unverändert, nur der EINE getestete Skill
+  wird ein-/ausgeblendet. Kein Zusatzaufwand, kein Konflikt.
+- Persönliche/globale Skills werden durch die frische, leere
+  `$HOME`-Isolation (Abschnitt 3.2) in beiden Bedingungen ausgeblendet —
+  korrekt fürs Isolationsprinzip, bedeutet aber: ein Nutzer mit mehreren
+  aktiven persönlichen Skills testet pro Lauf effektiv "nur Skill X" gegen
+  "gar kein Skill", nicht "X zusätzlich zu meinen üblichen Skills" gegen
+  "nur meine üblichen Skills". Gemildert (nicht gelöst) durch die
+  Watchlist unten: senkt die Entscheidungshürde, ändert aber nichts an der
+  Isolationslogik selbst.
+
+**Umgesetzt (CLI, Phase 2, nach diesem Plan-Update):**
+1. **Automatische Ableitung von `--check`** aus Projekt-Konventionen
+   (`npm test`-Skript, `pytest`/`go.mod`/`Cargo.toml`) statt Pflichtangabe
+   bei jedem Lauf. Bewusst konservativ: lieber kein Check als ein falsch
+   geratener, der einen kaputten Lauf als "erfolgreich" ausgibt.
+2. **Watchlist statt Pflichtangabe von `--skill`/`--skill-source`**
+   (`skill-ab watch add/remove/list`): Bei mehreren registrierten Skills
+   wählt `run` **genau einen** zufällig pro Aufruf — nie mehrere gleichzeitig
+   (das würde den Effekt eines Bündels statt eines einzelnen Skills messen,
+   Abschnitt 4/5). Verteilt Datenerhebung organisch über alle genutzten
+   Skills, ohne dass der Nutzer das pro Lauf entscheiden muss.
+
+**Noch nicht umgesetzt, als nächster Schritt vorgesehen:**
+3. **Asynchroner Schattenlauf statt synchronem Doppel-Lauf:** Ein
+   `Stop`-Hook merkt sich Aufgabe und Ausgangszustand vor der eigentlichen
+   (einmaligen, mit Skill durchgeführten) Arbeit und startet den
+   Gegenlauf danach automatisch im Hintergrund — kein manueller zweiter
+   Befehl, kein Warten auf das Ergebnis. Ändert nichts an den echten
+   Kosten/der Rechenzeit des Gegenlaufs, nur daran, dass der Nutzer sie
+   nicht mehr aktiv anstoßen und abwarten muss.
+4. **Sampling statt jeder Aufgabe:** Nicht jeder Lauf wird verglichen,
+   sondern nur eine Stichprobe (z.B. jede 5.–10. Aufgabe) — über viele
+   Nutzer/Sessions kommt trotzdem genug Datenvolumen zusammen, der
+   einzelne Nutzer merkt kaum etwas vom Mehraufwand.
 
 ---
 
