@@ -1,0 +1,39 @@
+import { loadConfig } from "./config.js";
+import { createPools } from "./db/pools.js";
+import { createPgAccountStore } from "./accounts/accountStore.js";
+import { createPgRunResultRepo } from "./ingestion/runResultRepo.js";
+import { createPgContentRepo } from "./ingestion/contentRepo.js";
+import { getSkillMetrics } from "./api/skillMetrics.js";
+import { getAllSkillMetrics } from "./api/export.js";
+import { buildApp } from "./app.js";
+
+async function main(): Promise<void> {
+  const config = loadConfig();
+  const pools = createPools(config);
+
+  const app = buildApp({
+    accountStore: createPgAccountStore(pools.app),
+    runResultRepo: createPgRunResultRepo(pools.app),
+    contentRepo: createPgContentRepo(pools.contentWriter),
+    trustedHashes: config.trustedCliBuildHashes,
+    getSkillMetrics: (skillId) => getSkillMetrics(pools.app, skillId),
+    getAllSkillMetrics: () => getAllSkillMetrics(pools.app),
+  });
+
+  const shutdown = async () => {
+    await app.close();
+    await pools.close();
+    process.exit(0);
+  };
+  process.on("SIGINT", shutdown);
+  process.on("SIGTERM", shutdown);
+
+  await app.listen({ port: config.port, host: "0.0.0.0" });
+  // eslint-disable-next-line no-console
+  console.log(`backend listening on :${config.port}`);
+}
+
+main().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});

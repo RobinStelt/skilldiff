@@ -1,0 +1,18 @@
+# Local Postgres for dev + the integration test suite (test/integration).
+# The migration (npm run migrate) creates app_backend / content_writer /
+# blindvoting_service with the passwords below — change them for anything
+# beyond a local machine (see db/migrations/001_init.sql).
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: marktplatz
+    ports:
+      - "5432:5432"
+    volumes:
+      - marktplatz-postgres:/var/lib/postgresql/data
+
+volumes:
+  marktplatz-postgres:

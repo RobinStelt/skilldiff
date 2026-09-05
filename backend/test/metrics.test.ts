@@ -1,0 +1,70 @@
+import { describe, expect, it } from "vitest";
+import { aggregateSkillCategory, type StoredRunResult } from "../src/aggregation/metrics.js";
+
+function baseRecord(overrides: Partial<StoredRunResult> = {}): StoredRunResult {
+  return {
+    runId: "r1",
+    skillId: "skill_x",
+    category: "debugging",
+    isolationTier: "A",
+    weight: 1,
+    withSkill: { success: true, tokens: 100, duration_sec: 10 },
+    withoutSkill: { success: true, tokens: 150, duration_sec: 20 },
+    securityDelta: null,
+    ...overrides,
+  };
+}
+
+describe("aggregateSkillCategory", () => {
+  it("never mixes categories — output is scoped to exactly the category passed in", () => {
+    const result = aggregateSkillCategory("skill_x", "debugging", [baseRecord()]);
+    expect(result.category).toBe("debugging");
+    expect(result.skillId).toBe("skill_x");
+  });
+
+  it("computes tokens/duration deltas as without_skill minus with_skill (positive = skill helped)", () => {
+    const result = aggregateSkillCategory("skill_x", "debugging", [baseRecord()], { iterations: 20 });
+    expect(result.tokensDelta.medianDelta).toBe(50);
+    expect(result.durationDelta.medianDelta).toBe(10);
+  });
+
+  it("excludes null success values from the success delta instead of treating them as failure", () => {
+    const records = [
+      baseRecord({ runId: "r1", withSkill: { success: null, tokens: 1, duration_sec: 1 }, withoutSkill: { success: null, tokens: 1, duration_sec: 1 } }),
+      baseRecord({ runId: "r2", withSkill: { success: true, tokens: 1, duration_sec: 1 }, withoutSkill: { success: false, tokens: 1, duration_sec: 1 } }),
+    ];
+    const result = aggregateSkillCategory("skill_x", "debugging", records, { iterations: 20 });
+    expect(result.successDelta.sampleSize).toBe(1);
+  });
+
+  it("aggregates security_delta separately and never folds it into success (briefing point 3)", () => {
+    const records = [
+      baseRecord({
+        runId: "r1",
+        securityDelta: {
+          with_skill: { critical: 0, high: 0, medium: 1, low: 0 },
+          without_skill: { critical: 1, high: 0, medium: 0, low: 0 },
+        },
+      }),
+    ];
+    const result = aggregateSkillCategory("skill_x", "debugging", records, { iterations: 20 });
+    // without_skill score (8) - with_skill score (2) = 6, positive = skill reduced findings.
+    expect(result.securityDelta?.medianDelta).toBe(6);
+    // success/tokens/duration stats are untouched by the security numbers.
+    expect(result.tokensDelta.medianDelta).toBe(50);
+  });
+
+  it("returns null security delta when no record in this skill+category has one", () => {
+    const result = aggregateSkillCategory("skill_x", "docs", [baseRecord({ category: "docs" })]);
+    expect(result.securityDelta).toBeNull();
+  });
+
+  it("weights records by their trust weight, not just counting them equally", () => {
+    const records = [
+      baseRecord({ runId: "r1", weight: 100, withSkill: { success: true, tokens: 0, duration_sec: 0 }, withoutSkill: { success: true, tokens: 10, duration_sec: 0 } }),
+      baseRecord({ runId: "r2", weight: 1, withSkill: { success: true, tokens: 0, duration_sec: 0 }, withoutSkill: { success: true, tokens: 1000, duration_sec: 0 } }),
+    ];
+    const result = aggregateSkillCategory("skill_x", "debugging", records, { iterations: 20 });
+    expect(result.tokensDelta.medianDelta).toBe(10);
+  });
+});
