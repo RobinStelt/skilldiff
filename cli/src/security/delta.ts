@@ -1,46 +1,46 @@
-import type { Kategorie, SecurityDelta, SeverityCounts } from "@marktplatz/schema";
-import { addiereSeverityCounts, leereSeverityCounts } from "./severityCounts.js";
-import { scanMitBandit, scanMitNpmAudit, scanMitSemgrep } from "./scanners.js";
+import type { Category, SecurityDelta, SeverityCounts } from "@marktplatz/schema";
+import { addSeverityCounts, emptySeverityCounts } from "./severityCounts.js";
+import { scanWithBandit, scanWithNpmAudit, scanWithSemgrep } from "./scanners.js";
 
-/** Code-nahe Kategorien, für die überhaupt gescannt wird (Plan Abschnitt 4). */
-const CODE_NAHE_KATEGORIEN: ReadonlySet<Kategorie> = new Set(["debugging", "feature", "refactoring"]);
+/** Code-adjacent categories that are scanned at all (plan section 4). */
+const CODE_ADJACENT_CATEGORIES: ReadonlySet<Category> = new Set(["debugging", "feature", "refactoring"]);
 
-export function istScanRelevant(kategorie: Kategorie): boolean {
-  return CODE_NAHE_KATEGORIEN.has(kategorie);
+export function isScanRelevant(category: Category): boolean {
+  return CODE_ADJACENT_CATEGORIES.has(category);
 }
 
 /**
- * Kombiniert alle zutreffenden Scanner (Semgrep sprachübergreifend als
- * Basis, npm audit/bandit als Ergänzung) zu einem Severity-Zählwert für
- * EIN Verzeichnis. Gleicher Scanner-Satz für "mit" und "ohne" zwingend
- * (Plan Abschnitt 5C) — deshalb wird diese Funktion für beide Bedingungen
- * identisch aufgerufen, nie unterschiedlich konfiguriert.
+ * Combines every applicable scanner (Semgrep as the cross-language base,
+ * npm audit/bandit as extras) into a single severity count for ONE
+ * directory. The same scanner set for "with" and "without" is mandatory
+ * (plan section 5C) — that's why this function is called identically for
+ * both conditions, never configured differently.
  */
-export async function scanneVerzeichnis(dir: string): Promise<SeverityCounts> {
+export async function scanDirectory(dir: string): Promise<SeverityCounts> {
   const [semgrep, npmAudit, bandit] = await Promise.all([
-    scanMitSemgrep(dir),
-    scanMitNpmAudit(dir),
-    scanMitBandit(dir),
+    scanWithSemgrep(dir),
+    scanWithNpmAudit(dir),
+    scanWithBandit(dir),
   ]);
-  return [semgrep, npmAudit, bandit].reduce(addiereSeverityCounts, leereSeverityCounts());
+  return [semgrep, npmAudit, bandit].reduce(addSeverityCounts, emptySeverityCounts());
 }
 
 /**
- * Ermittelt `security_delta` für einen RunResult. `null`, wenn die
- * Kategorie nicht code-nah ist (marketing/doku/sonstige) — dort wird gar
- * nicht erst gescannt, nicht nur das Ergebnis verworfen.
+ * Determines `security_delta` for a RunResult. `null` if the category is
+ * not code-adjacent (marketing/docs/other) — no scan is even attempted
+ * there, not just the result discarded.
  */
-export async function ermittleSecurityDelta(params: {
-  kategorie: Kategorie;
-  mitSkillDir: string;
-  ohneSkillDir: string;
+export async function determineSecurityDelta(params: {
+  category: Category;
+  withSkillDir: string;
+  withoutSkillDir: string;
 }): Promise<SecurityDelta> {
-  if (!istScanRelevant(params.kategorie)) {
+  if (!isScanRelevant(params.category)) {
     return null;
   }
-  const [mit_skill, ohne_skill] = await Promise.all([
-    scanneVerzeichnis(params.mitSkillDir),
-    scanneVerzeichnis(params.ohneSkillDir),
+  const [with_skill, without_skill] = await Promise.all([
+    scanDirectory(params.withSkillDir),
+    scanDirectory(params.withoutSkillDir),
   ]);
-  return { mit_skill, ohne_skill };
+  return { with_skill, without_skill };
 }

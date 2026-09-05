@@ -4,71 +4,71 @@ import { join } from "node:path";
 import { randomUUID, randomBytes } from "node:crypto";
 
 export interface LocalConfig {
-  /** Pseudonyme, langfristig stabile Account-ID (Plan Abschnitt 4). Keine E-Mail, kein Klarname. */
+  /** Pseudonymous, long-term stable account ID (plan section 4). No email, no real name. */
   accountId: string;
-  /** Lokaler Signierschlüssel — verlässt nie diesen Rechner, dient nur zum HMAC-Signieren vor Upload. */
+  /** Local signing secret — never leaves this machine, only used to HMAC-sign before upload. */
   signingSecret: string;
-  /** Wurde der einmalige Consent-Screen (Standard-Consent, nicht content_opt_in) bereits gezeigt? */
-  consentGesehenAm: string | null;
-  /** Entscheidung aus dem einmaligen Consent-Screen — persistiert, nicht pro Run erneut abgefragt. */
-  standardConsentErteilt: boolean;
-  /** Separates, zusätzliches Opt-in fürs Community-Blindvoting (Plan Abschnitt 4/8). */
+  /** Has the one-time consent screen (standard consent, not content_opt_in) already been shown? */
+  consentSeenAt: string | null;
+  /** Decision from the one-time consent screen — persisted, not asked again per run. */
+  standardConsentGiven: boolean;
+  /** Separate, additional opt-in for community blind voting (plan section 4/8). */
   contentOptIn: boolean;
 }
 
-/** Standard-Speicherort. Als Funktion (nicht Modulkonstante), damit Tests einen eigenen `configDir` übergeben können. */
-export function standardConfigDir(): string {
+/** Default storage location. Kept as a function (not a module constant) so tests can pass their own `configDir`. */
+export function defaultConfigDir(): string {
   return join(homedir(), ".skill-ab");
 }
 
-function configPfad(configDir: string): string {
+function configPath(configDir: string): string {
   return join(configDir, "config.json");
 }
 
-function erzeugeStandardConfig(): LocalConfig {
+function createDefaultConfig(): LocalConfig {
   return {
     accountId: randomUUID(),
     signingSecret: randomBytes(32).toString("hex"),
-    consentGesehenAm: null,
-    standardConsentErteilt: false,
+    consentSeenAt: null,
+    standardConsentGiven: false,
     contentOptIn: false,
   };
 }
 
-export function ladeOderErzeugeConfig(configDir: string = standardConfigDir()): LocalConfig {
-  const pfad = configPfad(configDir);
-  if (existsSync(pfad)) {
+export function loadOrCreateConfig(configDir: string = defaultConfigDir()): LocalConfig {
+  const path = configPath(configDir);
+  if (existsSync(path)) {
     try {
-      return JSON.parse(readFileSync(pfad, "utf-8")) as LocalConfig;
+      return JSON.parse(readFileSync(path, "utf-8")) as LocalConfig;
     } catch {
-      // korrupte Datei -> neu anlegen statt abzustürzen
+      // corrupt file -> create a fresh one instead of crashing
     }
   }
-  const config = erzeugeStandardConfig();
-  speichereConfig(config, configDir);
+  const config = createDefaultConfig();
+  saveConfig(config, configDir);
   return config;
 }
 
-export function speichereConfig(config: LocalConfig, configDir: string = standardConfigDir()): void {
+export function saveConfig(config: LocalConfig, configDir: string = defaultConfigDir()): void {
   mkdirSync(configDir, { recursive: true });
-  writeFileSync(configPfad(configDir), JSON.stringify(config, null, 2), "utf-8");
+  writeFileSync(configPath(configDir), JSON.stringify(config, null, 2), "utf-8");
 }
 
-export function istErsterLauf(config: LocalConfig): boolean {
-  return config.consentGesehenAm === null;
+export function isFirstRun(config: LocalConfig): boolean {
+  return config.consentSeenAt === null;
 }
 
-export function markiereConsentGesehen(
+export function markConsentSeen(
   config: LocalConfig,
-  entscheidung: { standardConsentErteilt: boolean; contentOptIn: boolean },
-  configDir: string = standardConfigDir(),
+  decision: { standardConsentGiven: boolean; contentOptIn: boolean },
+  configDir: string = defaultConfigDir(),
 ): LocalConfig {
-  const aktualisiert: LocalConfig = {
+  const updated: LocalConfig = {
     ...config,
-    consentGesehenAm: new Date().toISOString(),
-    standardConsentErteilt: entscheidung.standardConsentErteilt,
-    contentOptIn: entscheidung.contentOptIn,
+    consentSeenAt: new Date().toISOString(),
+    standardConsentGiven: decision.standardConsentGiven,
+    contentOptIn: decision.contentOptIn,
   };
-  speichereConfig(aktualisiert, configDir);
-  return aktualisiert;
+  saveConfig(updated, configDir);
+  return updated;
 }

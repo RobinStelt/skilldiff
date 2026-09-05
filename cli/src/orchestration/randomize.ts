@@ -1,21 +1,21 @@
-import type { Bedingung } from "../isolation/types.js";
+import type { Condition } from "../isolation/types.js";
 
-export interface Reihenfolge {
-  erste: Bedingung;
-  zweite: Bedingung;
-  randomisiert: boolean;
+export interface Order {
+  first: Condition;
+  second: Condition;
+  randomized: boolean;
 }
 
 /**
- * Randomisiert, welche Bedingung zuerst läuft (Plan Abschnitt 3.1/4,
- * Feld `reihenfolge_randomisiert`). `rng` ist injizierbar, damit Tests
- * deterministisch bleiben — Produktionscode nutzt `Math.random`.
+ * Randomizes which condition runs first (plan section 3.1/4, field
+ * `order_randomized`). `rng` is injectable so tests stay deterministic —
+ * production code uses `Math.random`.
  */
-export function randomisiereReihenfolge(rng: () => number = Math.random): Reihenfolge {
-  const mitZuerst = rng() < 0.5;
+export function randomizeOrder(rng: () => number = Math.random): Order {
+  const withSkillFirst = rng() < 0.5;
   return {
-    erste: mitZuerst ? "mit_skill" : "ohne_skill",
-    zweite: mitZuerst ? "ohne_skill" : "mit_skill",
-    randomisiert: true,
+    first: withSkillFirst ? "with_skill" : "without_skill",
+    second: withSkillFirst ? "without_skill" : "with_skill",
+    randomized: true,
   };
 }

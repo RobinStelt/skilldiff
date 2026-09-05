@@ -8,31 +8,31 @@ const program = new Command();
 program
   .name("skill-ab")
   .description(
-    "Führt eine Aufgabe automatisch einmal mit und einmal ohne einen Skill aus, misst automatisiert " +
-      "(kein manuelles Rating) und trägt das Ergebnis zum Skill-A/B-Marktplatz bei.",
+    "Runs a task automatically once with and once without a skill, measures it automatically " +
+      "(no manual rating), and contributes the result to the Skill-A/B Marketplace.",
   )
   .version("0.1.0");
 
 program
   .command("run")
-  .description("Vergleichslauf für einen Skill starten")
-  .requiredOption("--skill <id>", "ID des zu testenden Skills")
-  .requiredOption("--dir <pfad>", "Arbeitsverzeichnis der Aufgabe")
-  .requiredOption("--aufgabe <text>", "Aufgabenbeschreibung, die an Claude Code übergeben wird")
+  .description("Start a comparison run for a skill")
+  .requiredOption("--skill <id>", "ID of the skill to test")
+  .requiredOption("--dir <path>", "Working directory of the task")
+  .requiredOption("--task <text>", "Task description passed to Claude Code")
   .option(
-    "--skill-source <pfad>",
-    "Verzeichnis der Skill-Quelle — MUSS physisch außerhalb von --dir liegen (Tier A/B)",
+    "--skill-source <path>",
+    "Directory of the skill source — MUST live physically outside --dir (Tier A/B)",
   )
-  .option("--check <kommando>", "Prüfkommando für Erfolg, z.B. \"npm test\" — Exit-Code entscheidet, kein Rating")
-  .option("--claude-bin <pfad>", "Pfad/Name der claude-Binary", "claude")
-  .option("--endpoint <url>", "Backend-Endpoint für den Upload (weggelassen = lokaler Mock, Phase 3 noch nicht fertig)")
-  .option("--docker-image <image>", "Image für Tier-A-Läufe (muss die claude-CLI enthalten)")
+  .option("--check <command>", "Check command for success, e.g. \"npm test\" — exit code decides, no rating")
+  .option("--claude-bin <path>", "Path/name of the claude binary", "claude")
+  .option("--endpoint <url>", "Backend endpoint for the upload (omitted = local mock, Phase 3 not built yet)")
+  .option("--docker-image <image>", "Image for Tier A runs (must contain the claude CLI)")
   .action(async (opts) => {
     try {
       await runCommand({
         skillId: opts.skill,
         workDir: opts.dir,
-        aufgabe: opts.aufgabe,
+        task: opts.task,
         skillSourceDir: opts.skillSource,
         checkCommand: opts.check,
         claudeBin: opts.claudeBin,
@@ -40,7 +40,7 @@ program
         dockerImage: opts.dockerImage,
       });
     } catch (err) {
-      console.error(pc.red("Fehler:"), err instanceof Error ? err.message : err);
+      console.error(pc.red("Error:"), err instanceof Error ? err.message : err);
       process.exitCode = 1;
     }
   });

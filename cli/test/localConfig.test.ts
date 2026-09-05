@@ -2,7 +2,7 @@ import { describe, expect, it, afterEach } from "vitest";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { ladeOderErzeugeConfig, istErsterLauf, markiereConsentGesehen } from "../src/config/localConfig.js";
+import { loadOrCreateConfig, isFirstRun, markConsentSeen } from "../src/config/localConfig.js";
 
 describe("localConfig", () => {
   let configDir: string;
@@ -11,29 +11,29 @@ describe("localConfig", () => {
     if (configDir) rmSync(configDir, { recursive: true, force: true });
   });
 
-  it("erzeugt beim ersten Aufruf eine neue Config mit consentGesehenAm=null", () => {
+  it("creates a new config with consentSeenAt=null on first call", () => {
     configDir = mkdtempSync(join(tmpdir(), "skill-ab-config-"));
-    const config = ladeOderErzeugeConfig(configDir);
-    expect(istErsterLauf(config)).toBe(true);
+    const config = loadOrCreateConfig(configDir);
+    expect(isFirstRun(config)).toBe(true);
     expect(config.accountId).toBeTruthy();
-    expect(config.standardConsentErteilt).toBe(false);
+    expect(config.standardConsentGiven).toBe(false);
   });
 
-  it("lädt eine bereits gespeicherte Config unverändert erneut (stabile accountId)", () => {
+  it("reloads an already saved config unchanged (stable accountId)", () => {
     configDir = mkdtempSync(join(tmpdir(), "skill-ab-config-"));
-    const erste = ladeOderErzeugeConfig(configDir);
-    const zweite = ladeOderErzeugeConfig(configDir);
-    expect(zweite.accountId).toBe(erste.accountId);
+    const first = loadOrCreateConfig(configDir);
+    const second = loadOrCreateConfig(configDir);
+    expect(second.accountId).toBe(first.accountId);
   });
 
-  it("persistiert die Consent-Entscheidung, sodass istErsterLauf danach false ist", () => {
+  it("persists the consent decision, so isFirstRun is false afterward", () => {
     configDir = mkdtempSync(join(tmpdir(), "skill-ab-config-"));
-    let config = ladeOderErzeugeConfig(configDir);
-    config = markiereConsentGesehen(config, { standardConsentErteilt: true, contentOptIn: false }, configDir);
-    expect(istErsterLauf(config)).toBe(false);
+    let config = loadOrCreateConfig(configDir);
+    config = markConsentSeen(config, { standardConsentGiven: true, contentOptIn: false }, configDir);
+    expect(isFirstRun(config)).toBe(false);
 
-    const neuGeladen = ladeOderErzeugeConfig(configDir);
-    expect(istErsterLauf(neuGeladen)).toBe(false);
-    expect(neuGeladen.standardConsentErteilt).toBe(true);
+    const reloaded = loadOrCreateConfig(configDir);
+    expect(isFirstRun(reloaded)).toBe(false);
+    expect(reloaded.standardConsentGiven).toBe(true);
   });
 });

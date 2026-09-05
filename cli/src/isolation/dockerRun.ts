@@ -1,21 +1,21 @@
-import type { Bedingung } from "./types.js";
+import type { Condition } from "./types.js";
 
 const WORKSPACE_MOUNT = "/workspace";
 const SKILL_MOUNT = "/skill-source";
 
 /**
- * Baut die `docker run`-Argumente für Tier A.
+ * Builds the `docker run` arguments for Tier A.
  *
- * Wichtig: nur `workDir` (immer) und, im `mit_skill`-Fall, der EINE erlaubte
- * Skill-Ordner werden gemountet (Plan Abschnitt 3.2) — kein `-v $HOME:...`,
- * kein Zugriff auf den restlichen Host. Das Basis-Image muss `claude`
- * (Claude Code CLI) enthalten; welches Image das ist, ist konfigurierbar
- * (`--docker-image`), das Bauen/Pflegen eines solchen Images selbst ist
- * nicht Teil dieser Phase.
+ * Important: only `workDir` (always) and, in the `with_skill` case, the
+ * one allowed skill folder are mounted (plan section 3.2) — no
+ * `-v $HOME:...`, no access to the rest of the host. The base image must
+ * contain `claude` (Claude Code CLI); which image that is is configurable
+ * (`--docker-image`) — building/maintaining such an image is not part of
+ * this phase.
  *
- * Der Container bekommt ein leeres, isoliertes `$HOME` (`/home/runner`)
- * innerhalb des Containers ohnehin geschenkt — dort existieren von Haus aus
- * keine persönlichen Skills, das Problem aus Tier B/C entfällt hier.
+ * The container gets an empty, isolated `$HOME` (`/home/runner`) inside the
+ * container for free anyway — no personal skills exist there by
+ * construction, so the Tier B/C problem doesn't arise here.
  */
 export function buildDockerRunArgs(params: {
   runtime: "docker" | "podman";
@@ -23,17 +23,17 @@ export function buildDockerRunArgs(params: {
   workDir: string;
   skillSourceDir: string | null;
   skillId: string;
-  bedingung: Bedingung;
+  condition: Condition;
   claudeInvocationArgs: string[];
   apiKeyEnvVar: string;
 }): string[] {
-  const { runtime, image, workDir, skillSourceDir, skillId, bedingung, claudeInvocationArgs, apiKeyEnvVar } = params;
+  const { runtime, image, workDir, skillSourceDir, skillId, condition, claudeInvocationArgs, apiKeyEnvVar } = params;
 
   const args: string[] = [
     "run",
     "--rm",
     "--network",
-    runtime === "docker" ? "bridge" : "slirp4netns", // nur für Modell-API-Zugriff nötig, kein Host-Netz
+    runtime === "docker" ? "bridge" : "slirp4netns", // only needed for model API access, no host network
     "-v",
     `${workDir}:${WORKSPACE_MOUNT}`,
     "-w",
@@ -46,12 +46,12 @@ export function buildDockerRunArgs(params: {
     args.push("-e", `${apiKeyEnvVar}=${process.env[apiKeyEnvVar]}`);
   }
 
-  if (bedingung === "mit_skill") {
+  if (condition === "with_skill") {
     if (!skillSourceDir) {
-      throw new Error("mit_skill-Bedingung in Tier A benötigt skillSourceDir");
+      throw new Error("with_skill condition in Tier A requires skillSourceDir");
     }
-    // Nur DIESER eine Skill-Ordner wird gemountet — nicht der ganze
-    // Skill-Vault, sonst könnte das Modell im Container Nachbar-Skills sehen.
+    // Only THIS ONE skill folder is mounted — not the whole skill vault,
+    // otherwise the model inside the container could see sibling skills.
     args.push("-v", `${skillSourceDir}:${SKILL_MOUNT}/${skillId}:ro`);
   }
 

@@ -6,24 +6,24 @@ import { promisify } from "node:util";
 const execAsync = promisify(exec);
 
 const CODE_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx", ".py", ".go", ".java", ".rb", ".php", ".cs"]);
-const IGNORIERTE_ORDNER = new Set(["node_modules", ".git", "dist", "build", ".venv", "__pycache__"]);
+const IGNORED_DIRS = new Set(["node_modules", ".git", "dist", "build", ".venv", "__pycache__"]);
 
-/** Zählt grobe Verzweigungs-Schlüsselwörter als Näherung an zyklomatische Komplexität. */
-const ENTSCHEIDUNGSPUNKTE = /\b(if|else if|for|while|case|catch)\b|(\?\?|&&|\|\||\?)/g;
+/** Counts rough branching keywords as an approximation of cyclomatic complexity. */
+const DECISION_POINTS = /\b(if|else if|for|while|case|catch)\b|(\?\?|&&|\|\||\?)/g;
 
 /**
- * Heuristische zyklomatische Komplexität, summiert über alle Quelldateien
- * im Verzeichnis: Basiswert 1 pro Datei + 1 pro gefundenem Entscheidungs-
- * punkt (if/else if/for/while/case/catch/&&/||/??/Ternary).
+ * Heuristic cyclomatic complexity, summed over every source file in the
+ * directory: a base value of 1 per file + 1 per detected decision point
+ * (if/else if/for/while/case/catch/&&/||/??/ternary).
  *
- * Bewusst keine echte AST-basierte Berechnung (bräuchte pro Sprache einen
- * eigenen Parser, z.B. ts-morph für TS/JS, `radon` für Python — Aufwand für
- * eine spätere Phase). Diese Näherung reicht, um GROBE Unterschiede
- * vorher/nachher sichtbar zu machen, ist aber keine exakte Metrik — im
- * README entsprechend eingeordnet.
+ * Deliberately not a real AST-based calculation (would need a per-language
+ * parser, e.g. ts-morph for TS/JS, `radon` for Python — worth the effort in
+ * a later phase). This approximation is enough to surface ROUGH
+ * before/after differences, but it is not an exact metric — the README
+ * calls this out explicitly.
  */
-export function schaetzeZyklomatischeKomplexitaet(dir: string): number {
-  let summe = 0;
+export function estimateCyclomaticComplexity(dir: string): number {
+  let total = 0;
 
   function traverse(current: string): void {
     let entries: string[];
@@ -33,7 +33,7 @@ export function schaetzeZyklomatischeKomplexitaet(dir: string): number {
       return;
     }
     for (const entry of entries) {
-      if (IGNORIERTE_ORDNER.has(entry)) continue;
+      if (IGNORED_DIRS.has(entry)) continue;
       const fullPath = join(current, entry);
       let info: ReturnType<typeof statSync>;
       try {
@@ -47,36 +47,36 @@ export function schaetzeZyklomatischeKomplexitaet(dir: string): number {
       }
       if (!CODE_EXTENSIONS.has(extname(entry).toLowerCase())) continue;
       try {
-        const inhalt = readFileSync(fullPath, "utf-8");
-        const treffer = inhalt.match(ENTSCHEIDUNGSPUNKTE);
-        summe += 1 + (treffer?.length ?? 0);
+        const content = readFileSync(fullPath, "utf-8");
+        const matches = content.match(DECISION_POINTS);
+        total += 1 + (matches?.length ?? 0);
       } catch {
-        // binäre/unlesbare Datei mit Code-Endung -> überspringen
+        // binary/unreadable file with a code extension -> skip
       }
     }
   }
 
   traverse(dir);
-  return summe;
+  return total;
 }
 
 /**
- * Diff-Größe in geänderten Zeilen zwischen zwei Verzeichnissen, ermittelt
- * über `git diff --no-index --shortstat` (nutzt Git ausschließlich als
- * Diff-Algorithmus, nicht als Repo-Voraussetzung — funktioniert auch,
- * wenn keins der beiden Verzeichnisse ein Git-Repo ist).
+ * Diff size in changed lines between two directories, computed via
+ * `git diff --no-index --shortstat` (uses Git purely as a diff algorithm,
+ * not as a repo requirement — works even if neither directory is a Git
+ * repo).
  */
-export async function ermittleDiffGroesse(originalDir: string, geaendertDir: string): Promise<number> {
+export async function computeDiffSize(originalDir: string, changedDir: string): Promise<number> {
   try {
     const { stdout } = await execAsync(
-      `git diff --no-index --shortstat -- "${originalDir}" "${geaendertDir}"`,
+      `git diff --no-index --shortstat -- "${originalDir}" "${changedDir}"`,
       { maxBuffer: 20 * 1024 * 1024 },
     );
     return parseShortstat(stdout);
   } catch (err) {
     const e = err as { stdout?: string };
-    // git diff --no-index beendet sich mit Exit-Code 1, wenn es Unterschiede
-    // gibt — das ist der Normalfall hier, kein Fehler.
+    // git diff --no-index exits with code 1 when there are differences —
+    // that's the normal case here, not an error.
     if (typeof e.stdout === "string") {
       return parseShortstat(e.stdout);
     }

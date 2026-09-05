@@ -3,35 +3,35 @@ import { runCondition, parseClaudeUsage } from "../src/orchestration/runConditio
 import type { ProcessRunner } from "../src/orchestration/processRunner.js";
 
 describe("parseClaudeUsage", () => {
-  it("summiert alle Token-Kategorien aus dem claude --output-format json Objekt", () => {
+  it("sums all token categories from the claude --output-format json object", () => {
     const stdout = JSON.stringify({
       duration_ms: 4200,
       usage: { input_tokens: 100, output_tokens: 50, cache_creation_input_tokens: 10, cache_read_input_tokens: 5 },
     });
-    expect(parseClaudeUsage(stdout)).toEqual({ tokens: 165, dauerMs: 4200 });
+    expect(parseClaudeUsage(stdout)).toEqual({ tokens: 165, durationMs: 4200 });
   });
 
-  it("fällt bei unparsebarer Ausgabe auf 0 zurück, statt zu werfen", () => {
-    expect(parseClaudeUsage("kein json")).toEqual({ tokens: 0, dauerMs: 0 });
+  it("falls back to 0 on unparseable output instead of throwing", () => {
+    expect(parseClaudeUsage("not json")).toEqual({ tokens: 0, durationMs: 0 });
   });
 });
 
-function fakeRunner(antworten: Record<string, { stdout: string; exitCode: number }>): ProcessRunner {
+function fakeRunner(responses: Record<string, { stdout: string; exitCode: number }>): ProcessRunner {
   return {
     async run(cmd) {
-      const antwort = antworten[cmd];
-      if (!antwort) throw new Error(`Kein Fake-Ergebnis für Kommando "${cmd}" konfiguriert`);
-      return { stdout: antwort.stdout, stderr: "", exitCode: antwort.exitCode };
+      const response = responses[cmd];
+      if (!response) throw new Error(`No fake result configured for command "${cmd}"`);
+      return { stdout: response.stdout, stderr: "", exitCode: response.exitCode };
     },
   };
 }
 
 describe("runCondition", () => {
-  it("erfolg=null, wenn kein Prüfkommando angegeben ist", async () => {
+  it("success=null when no check command is given", async () => {
     const runner = fakeRunner({
       claude: { stdout: JSON.stringify({ duration_ms: 1000, usage: { input_tokens: 10, output_tokens: 10 } }), exitCode: 0 },
     });
-    const ergebnis = await runCondition({
+    const outcome = await runCondition({
       runner,
       claudeBin: "claude",
       claudeArgs: [],
@@ -39,17 +39,17 @@ describe("runCondition", () => {
       env: {},
       checkCommand: null,
     });
-    expect(ergebnis.erfolg).toBeNull();
-    expect(ergebnis.tokens).toBe(20);
-    expect(ergebnis.dauer_sek).toBe(1);
+    expect(outcome.success).toBeNull();
+    expect(outcome.tokens).toBe(20);
+    expect(outcome.duration_sec).toBe(1);
   });
 
-  it("erfolg=true/false ausschließlich aus dem Exit-Code des Prüfkommandos, nie aus claude selbst", async () => {
+  it("success=true/false comes exclusively from the check command's exit code, never from claude itself", async () => {
     const runner = fakeRunner({
       claude: { stdout: JSON.stringify({ duration_ms: 500, usage: {} }), exitCode: 0 },
       "npm test": { stdout: "", exitCode: 1 },
     });
-    const ergebnis = await runCondition({
+    const outcome = await runCondition({
       runner,
       claudeBin: "claude",
       claudeArgs: [],
@@ -57,6 +57,6 @@ describe("runCondition", () => {
       env: {},
       checkCommand: { cmd: "npm test", args: [] },
     });
-    expect(ergebnis.erfolg).toBe(false);
+    expect(outcome.success).toBe(false);
   });
 });

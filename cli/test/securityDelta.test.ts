@@ -2,57 +2,57 @@ import { describe, expect, it, afterEach } from "vitest";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { ermittleSecurityDelta, istScanRelevant } from "../src/security/delta.js";
-import { addiereSeverityCounts, leereSeverityCounts } from "../src/security/severityCounts.js";
+import { determineSecurityDelta, isScanRelevant } from "../src/security/delta.js";
+import { addSeverityCounts, emptySeverityCounts } from "../src/security/severityCounts.js";
 
-describe("istScanRelevant", () => {
-  it("ist nur für code-nahe Kategorien relevant", () => {
-    expect(istScanRelevant("debugging")).toBe(true);
-    expect(istScanRelevant("feature")).toBe(true);
-    expect(istScanRelevant("refactoring")).toBe(true);
-    expect(istScanRelevant("doku")).toBe(false);
-    expect(istScanRelevant("marketing")).toBe(false);
-    expect(istScanRelevant("sonstige")).toBe(false);
+describe("isScanRelevant", () => {
+  it("is relevant only for code-adjacent categories", () => {
+    expect(isScanRelevant("debugging")).toBe(true);
+    expect(isScanRelevant("feature")).toBe(true);
+    expect(isScanRelevant("refactoring")).toBe(true);
+    expect(isScanRelevant("docs")).toBe(false);
+    expect(isScanRelevant("marketing")).toBe(false);
+    expect(isScanRelevant("other")).toBe(false);
   });
 });
 
-describe("addiereSeverityCounts", () => {
-  it("summiert Severity-Stufen korrekt", () => {
-    const a = { kritisch: 1, hoch: 2, mittel: 3, niedrig: 4 };
-    const b = { kritisch: 5, hoch: 0, mittel: 1, niedrig: 0 };
-    expect(addiereSeverityCounts(a, b)).toEqual({ kritisch: 6, hoch: 2, mittel: 4, niedrig: 4 });
+describe("addSeverityCounts", () => {
+  it("sums severity levels correctly", () => {
+    const a = { critical: 1, high: 2, medium: 3, low: 4 };
+    const b = { critical: 5, high: 0, medium: 1, low: 0 };
+    expect(addSeverityCounts(a, b)).toEqual({ critical: 6, high: 2, medium: 4, low: 4 });
   });
 
-  it("leereSeverityCounts ist neutrales Element", () => {
-    const a = { kritisch: 1, hoch: 2, mittel: 3, niedrig: 4 };
-    expect(addiereSeverityCounts(a, leereSeverityCounts())).toEqual(a);
+  it("emptySeverityCounts is the neutral element", () => {
+    const a = { critical: 1, high: 2, medium: 3, low: 4 };
+    expect(addSeverityCounts(a, emptySeverityCounts())).toEqual(a);
   });
 });
 
-describe("ermittleSecurityDelta", () => {
-  let mitDir: string;
-  let ohneDir: string;
+describe("determineSecurityDelta", () => {
+  let withDir: string;
+  let withoutDir: string;
 
   afterEach(() => {
-    rmSync(mitDir, { recursive: true, force: true });
-    rmSync(ohneDir, { recursive: true, force: true });
+    rmSync(withDir, { recursive: true, force: true });
+    rmSync(withoutDir, { recursive: true, force: true });
   });
 
-  it("liefert null für nicht code-nahe Kategorien (kein Scan wird ausgeführt)", async () => {
-    mitDir = mkdtempSync(join(tmpdir(), "skill-ab-sec-mit-"));
-    ohneDir = mkdtempSync(join(tmpdir(), "skill-ab-sec-ohne-"));
-    const delta = await ermittleSecurityDelta({ kategorie: "marketing", mitSkillDir: mitDir, ohneSkillDir: ohneDir });
+  it("returns null for non-code-adjacent categories (no scan is run)", async () => {
+    withDir = mkdtempSync(join(tmpdir(), "skill-ab-sec-with-"));
+    withoutDir = mkdtempSync(join(tmpdir(), "skill-ab-sec-without-"));
+    const delta = await determineSecurityDelta({ category: "marketing", withSkillDir: withDir, withoutSkillDir: withoutDir });
     expect(delta).toBeNull();
   });
 
-  it("liefert eine Objektstruktur (nie null) für code-nahe Kategorien, auch ohne installierte Scanner", async () => {
-    mitDir = mkdtempSync(join(tmpdir(), "skill-ab-sec-mit-"));
-    ohneDir = mkdtempSync(join(tmpdir(), "skill-ab-sec-ohne-"));
-    writeFileSync(join(mitDir, "index.ts"), "export const x = 1;");
-    writeFileSync(join(ohneDir, "index.ts"), "export const x = 1;");
-    const delta = await ermittleSecurityDelta({ kategorie: "feature", mitSkillDir: mitDir, ohneSkillDir: ohneDir });
+  it("returns an object structure (never null) for code-adjacent categories, even without any scanners installed", async () => {
+    withDir = mkdtempSync(join(tmpdir(), "skill-ab-sec-with-"));
+    withoutDir = mkdtempSync(join(tmpdir(), "skill-ab-sec-without-"));
+    writeFileSync(join(withDir, "index.ts"), "export const x = 1;");
+    writeFileSync(join(withoutDir, "index.ts"), "export const x = 1;");
+    const delta = await determineSecurityDelta({ category: "feature", withSkillDir: withDir, withoutSkillDir: withoutDir });
     expect(delta).not.toBeNull();
-    expect(delta?.mit_skill).toHaveProperty("kritisch");
-    expect(delta?.ohne_skill).toHaveProperty("niedrig");
+    expect(delta?.with_skill).toHaveProperty("critical");
+    expect(delta?.without_skill).toHaveProperty("low");
   });
 });

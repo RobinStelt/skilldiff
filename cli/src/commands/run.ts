@@ -2,25 +2,25 @@ import pc from "picocolors";
 import { detectIsolationTier, assertSkillSourceOutsideWorkDir, tierRequiresOutsideSourceCheck } from "../isolation/index.js";
 import { buildDockerRunArgs } from "../isolation/dockerRun.js";
 import type { Invocation } from "../orchestration/runOrchestrator.js";
-import { fuehreVergleichAus, cleanupWorkDirCopies } from "../orchestration/runOrchestrator.js";
+import { runComparison, cleanupWorkDirCopies } from "../orchestration/runOrchestrator.js";
 import { realProcessRunner } from "../orchestration/processRunner.js";
-import type { Bedingung } from "../isolation/types.js";
-import { erkenneKategorie } from "../category/detectCategory.js";
-import { bestimmeGroessenklasse } from "../category/sizeBucket.js";
-import { ermittleSecurityDelta } from "../security/delta.js";
-import { ermittleKategorieMetrikenFuerBedingung } from "../metrics/categoryMetrics.js";
-import { ladeOderErzeugeConfig, istErsterLauf, markiereConsentGesehen } from "../config/localConfig.js";
-import { zeigeConsentScreen } from "../consent/consentScreen.js";
-import { zeigeLokalesDelta } from "../report/localReport.js";
-import { sendeRunResult } from "../upload/submit.js";
+import type { Condition } from "../isolation/types.js";
+import { detectCategory } from "../category/detectCategory.js";
+import { determineSizeBucket } from "../category/sizeBucket.js";
+import { determineSecurityDelta } from "../security/delta.js";
+import { determineCategoryMetricsForCondition } from "../metrics/categoryMetrics.js";
+import { loadOrCreateConfig, isFirstRun, markConsentSeen } from "../config/localConfig.js";
+import { showConsentScreen } from "../consent/consentScreen.js";
+import { showLocalDelta } from "../report/localReport.js";
+import { submitRunResult } from "../upload/submit.js";
 import { buildRunResult } from "../buildRunResult.js";
-import { ermittleClaudeVersion, ermittleCliBuildHash, ermittleCliVersion } from "../versionInfo.js";
+import { getClaudeVersion, getCliBuildHash, getCliVersion } from "../versionInfo.js";
 
 export interface RunCommandOptions {
   skillId: string;
   workDir: string;
   skillSourceDir?: string;
-  aufgabe: string;
+  task: string;
   checkCommand?: string;
   claudeBin?: string;
   endpointUrl?: string;
@@ -39,42 +39,42 @@ export async function runCommand(options: RunCommandOptions): Promise<void> {
   const claudeBin = options.claudeBin ?? "claude";
   const checkCommand = parseCheckCommand(options.checkCommand);
 
-  // --- 8. Consent-Screen: nur beim allerersten Lauf ---------------------
-  let config = ladeOderErzeugeConfig();
-  if (istErsterLauf(config)) {
-    const entscheidung = await zeigeConsentScreen();
-    config = markiereConsentGesehen(config, entscheidung);
-    if (!entscheidung.standardConsentErteilt) {
+  // --- 8. Consent screen: only on the very first run ---------------------
+  let config = loadOrCreateConfig();
+  if (isFirstRun(config)) {
+    const decision = await showConsentScreen();
+    config = markConsentSeen(config, decision);
+    if (!decision.standardConsentGiven) {
       console.log(
         pc.yellow(
-          "\nOhne Standard-Consent lädt dieses CLI nichts hoch. Du bekommst weiterhin dein lokales Delta angezeigt.",
+          "\nWithout standard consent, this CLI uploads nothing. You'll still see your local delta.",
         ),
       );
     }
   }
 
-  // --- 2. Gestufte Kontrolllauf-Isolation: tatsächlich prüfen, nicht raten ---
-  const tierErgebnis = await detectIsolationTier();
-  console.log(pc.dim(`Isolationsstufe: ${tierErgebnis.tier} (${tierErgebnis.begruendung})`));
+  // --- 2. Tiered control-run isolation: actually checked, not guessed ----
+  const tierResult = await detectIsolationTier();
+  console.log(pc.dim(`Isolation tier: ${tierResult.tier} (${tierResult.reason})`));
 
-  if (tierRequiresOutsideSourceCheck(tierErgebnis.tier) && options.skillSourceDir) {
+  if (tierRequiresOutsideSourceCheck(tierResult.tier) && options.skillSourceDir) {
     assertSkillSourceOutsideWorkDir(options.workDir, options.skillSourceDir);
   }
 
-  // --- 1. Run-Orchestrierung: baut den passenden Aufruf je nach Tier ----
-  const buildInvocation = (bedingung: Bedingung, workDirKopie: string): Invocation => {
-    const claudeArgs = ["-p", options.aufgabe, "--output-format", "json", "--setting-sources", "project"];
+  // --- 1. Run orchestration: builds the right invocation per tier --------
+  const buildInvocation = (condition: Condition, workDirCopy: string): Invocation => {
+    const claudeArgs = ["-p", options.task, "--output-format", "json", "--setting-sources", "project"];
 
-    if (tierErgebnis.tier === "A") {
-      // Tier A wird als docker/podman-Wrapper um denselben claude-Aufruf gebaut.
-      const runtime = tierErgebnis.dockerVerfuegbar ? "docker" : "podman";
+    if (tierResult.tier === "A") {
+      // Tier A is built as a docker/podman wrapper around the same claude call.
+      const runtime = tierResult.dockerAvailable ? "docker" : "podman";
       const args = buildDockerRunArgs({
         runtime,
         image: options.dockerImage ?? "skill-ab/claude-runner:latest",
-        workDir: workDirKopie,
-        skillSourceDir: bedingung === "mit_skill" ? options.skillSourceDir ?? null : null,
+        workDir: workDirCopy,
+        skillSourceDir: condition === "with_skill" ? options.skillSourceDir ?? null : null,
         skillId: options.skillId,
-        bedingung,
+        condition,
         claudeInvocationArgs: [claudeBin, ...claudeArgs],
         apiKeyEnvVar: options.apiKeyEnvVar ?? "ANTHROPIC_API_KEY",
       });
@@ -84,82 +84,82 @@ export async function runCommand(options: RunCommandOptions): Promise<void> {
     return { bin: claudeBin, args: claudeArgs };
   };
 
-  console.log(pc.bold(`\nStarte Vergleichslauf für Skill "${options.skillId}" — Reihenfolge wird randomisiert...\n`));
+  console.log(pc.bold(`\nStarting comparison run for skill "${options.skillId}" — order will be randomized...\n`));
 
-  const ergebnis = await fuehreVergleichAus({
+  const result = await runComparison({
     runner: realProcessRunner,
     buildInvocation,
     originalWorkDir: options.workDir,
     skillId: options.skillId,
     skillSourceDir: options.skillSourceDir ?? null,
-    tier: tierErgebnis.tier,
-    linkFaehigkeit: tierErgebnis.linkFaehigkeit,
+    tier: tierResult.tier,
+    linkCapability: tierResult.linkCapability,
     checkCommand,
   });
 
   try {
-    // --- 6. Kategoriespezifische Metriken + automatische Kategorieerkennung ---
-    const kategorie = erkenneKategorie({ aufgabe: options.aufgabe, workDir: options.workDir });
-    const sizeBucket = bestimmeGroessenklasse(options.workDir);
+    // --- 6. Category-specific metrics + automatic category detection ----
+    const category = detectCategory({ task: options.task, workDir: options.workDir });
+    const sizeBucket = determineSizeBucket(options.workDir);
 
-    const [mitSkillMetrics, ohneSkillMetrics, securityDelta] = await Promise.all([
-      ermittleKategorieMetrikenFuerBedingung(kategorie, options.workDir, ergebnis.mitSkill),
-      ermittleKategorieMetrikenFuerBedingung(kategorie, options.workDir, ergebnis.ohneSkill),
-      ermittleSecurityDelta({
-        kategorie,
-        mitSkillDir: ergebnis.mitSkill.workDirKopie,
-        ohneSkillDir: ergebnis.ohneSkill.workDirKopie,
+    const [withSkillMetrics, withoutSkillMetrics, securityDelta] = await Promise.all([
+      determineCategoryMetricsForCondition(category, options.workDir, result.withSkill),
+      determineCategoryMetricsForCondition(category, options.workDir, result.withoutSkill),
+      determineSecurityDelta({
+        category,
+        withSkillDir: result.withSkill.workDirCopy,
+        withoutSkillDir: result.withoutSkill.workDirCopy,
       }),
     ]);
 
-    // --- 7. Sofortiger lokaler Eigennutzen ---------------------------------
-    zeigeLokalesDelta({
+    // --- 7. Immediate local benefit ----------------------------------------
+    showLocalDelta({
       skillId: options.skillId,
-      mitSkill: ergebnis.mitSkill.laufergebnis,
-      ohneSkill: ergebnis.ohneSkill.laufergebnis,
+      withSkill: result.withSkill.runOutcome,
+      withoutSkill: result.withoutSkill.runOutcome,
     });
 
-    if (!config.standardConsentErteilt) {
-      return; // kein Upload ohne Consent — lokaler Nutzen wurde bereits gezeigt.
+    if (!config.standardConsentGiven) {
+      return; // no upload without consent — local benefit was already shown.
     }
 
-    // --- 4. Erzwungener Upload, kein Cherry-Picking ------------------------
-    // Erst HIER, nach Abschluss BEIDER vollständigen Bedingungen, wird
-    // überhaupt ein RunResult zusammengebaut. Ein Abbruch (Ctrl+C) vorher
-    // hat diesen Punkt nie erreicht -> es wird nichts hochgeladen.
+    // --- 4. Forced upload, no cherry-picking -------------------------------
+    // Only HERE, after BOTH complete conditions are done, is a RunResult
+    // even assembled. An interruption (Ctrl+C) before this point never
+    // reached it -> nothing gets uploaded.
     const [claudeVersion, cliBuildHash] = await Promise.all([
-      ermittleClaudeVersion(claudeBin),
-      ermittleCliBuildHash(),
+      getClaudeVersion(claudeBin),
+      getCliBuildHash(),
     ]);
 
     const runResult = buildRunResult({
       skillId: options.skillId,
       accountId: config.accountId,
       signingSecret: config.signingSecret,
-      kategorie,
+      category,
       sizeBucket,
-      isolationTier: tierErgebnis.tier,
-      mitSkillLaufergebnis: ergebnis.mitSkill.laufergebnis,
-      ohneSkillLaufergebnis: ergebnis.ohneSkill.laufergebnis,
+      isolationTier: tierResult.tier,
+      withSkillRunOutcome: result.withSkill.runOutcome,
+      withoutSkillRunOutcome: result.withoutSkill.runOutcome,
       securityDelta,
-      mitSkillMetrics,
-      ohneSkillMetrics,
+      withSkillMetrics,
+      withoutSkillMetrics,
       contentOptIn: config.contentOptIn,
-      contentRef: null, // Klartext-Hosting für Blindvoting ist Phase-7-Thema, hier bewusst immer null
-      reihenfolgeRandomisiert: ergebnis.reihenfolgeRandomisiert,
+      contentRef: null, // plain-text hosting for blind voting is a Phase 7 topic, deliberately always null here
+      orderRandomized: result.orderRandomized,
       claudeVersion,
-      cliVersion: ermittleCliVersion(),
+      cliVersion: getCliVersion(),
       cliBuildHash,
     });
 
-    const uploadErgebnis = await sendeRunResult(runResult, { endpointUrl: options.endpointUrl ?? null });
-    if (uploadErgebnis.ok) {
-      console.log(pc.green(`✓ Ergebnis übertragen (${uploadErgebnis.modus}): ${uploadErgebnis.ziel}`));
+    const uploadResult = await submitRunResult(runResult, { endpointUrl: options.endpointUrl ?? null });
+    if (uploadResult.ok) {
+      console.log(pc.green(`✓ Result transmitted (${uploadResult.mode}): ${uploadResult.target}`));
     } else {
-      console.error(pc.red("✗ Validierung/Upload fehlgeschlagen:"), uploadErgebnis.fehler);
+      console.error(pc.red("✗ Validation/upload failed:"), uploadResult.error);
       process.exitCode = 1;
     }
   } finally {
-    cleanupWorkDirCopies(ergebnis);
+    cleanupWorkDirCopies(result);
   }
 }

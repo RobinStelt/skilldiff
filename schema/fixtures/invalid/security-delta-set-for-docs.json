@@ -1,0 +1,26 @@
+{
+  "skill_id": "skill_doc_writer",
+  "account_id": "acct_ffa001",
+  "signature": "9b0e...2c7f",
+  "category": "docs",
+  "size_bucket": "small",
+  "isolation_tier": "A",
+  "with_skill": { "success": true, "tokens": 6210, "duration_sec": 54 },
+  "without_skill": { "success": true, "tokens": 7040, "duration_sec": 61 },
+  "security_delta": {
+    "with_skill": { "critical": 0, "high": 0, "medium": 0, "low": 0 },
+    "without_skill": { "critical": 0, "high": 0, "medium": 0, "low": 0 }
+  },
+  "category_metrics": {
+    "with_skill": { "readability_score": 68.3 },
+    "without_skill": { "readability_score": 52.1 }
+  },
+  "content_opt_in": true,
+  "content_ref": "content_ref_00091",
+  "run_id": "run_invalid_001",
+  "order_randomized": true,
+  "timestamp": "2026-09-01T08:00:00Z",
+  "claude_version": "claude-sonnet-5",
+  "cli_version": "0.1.0",
+  "cli_build_hash": "b1f3c9d"
+}

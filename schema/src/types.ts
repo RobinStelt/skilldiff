@@ -1,40 +1,40 @@
 import type { z } from "zod";
 import type {
-  kategorieSchema,
+  categorySchema,
   sizeBucketSchema,
   isolationTierSchema,
-  laufergebnisSchema,
+  runOutcomeSchema,
   severityCountsSchema,
   securityDeltaSchema,
   categoryMetricsDebuggingSchema,
   categoryMetricsRefactoringSchema,
-  categoryMetricsDokuSchema,
+  categoryMetricsDocsSchema,
   runResultSchema,
 } from "./schema.js";
 
-export type Kategorie = z.infer<typeof kategorieSchema>;
+export type Category = z.infer<typeof categorySchema>;
 export type SizeBucket = z.infer<typeof sizeBucketSchema>;
 export type IsolationTier = z.infer<typeof isolationTierSchema>;
-export type Laufergebnis = z.infer<typeof laufergebnisSchema>;
+export type RunOutcome = z.infer<typeof runOutcomeSchema>;
 export type SeverityCounts = z.infer<typeof severityCountsSchema>;
 export type SecurityDelta = z.infer<typeof securityDeltaSchema>;
 
 export type CategoryMetricsDebuggingFeature = z.infer<typeof categoryMetricsDebuggingSchema>;
 export type CategoryMetricsRefactoring = z.infer<typeof categoryMetricsRefactoringSchema>;
-export type CategoryMetricsDoku = z.infer<typeof categoryMetricsDokuSchema>;
+export type CategoryMetricsDocs = z.infer<typeof categoryMetricsDocsSchema>;
 
 /**
- * Haupttyp. Diskriminierte Union nach `category` — TypeScript engt
- * `category_metrics` (und `security_delta`) beim Narrowing auf `category`
- * automatisch auf die passende Variante ein.
+ * Main type. Discriminated union by `category` — TypeScript narrows
+ * `category_metrics` (and `security_delta`) to the matching variant
+ * automatically once `category` is narrowed.
  */
 export type RunResult = z.infer<typeof runResultSchema>;
 
-// Bequeme, nach Kategorie ausdiskriminierte Einzeltypen für Call-Sites,
-// die von vornherein wissen, mit welcher Kategorie sie arbeiten.
+// Convenient, per-category discriminated types for call sites that already
+// know which category they're working with.
 export type RunResultDebugging = Extract<RunResult, { category: "debugging" }>;
 export type RunResultFeature = Extract<RunResult, { category: "feature" }>;
 export type RunResultRefactoring = Extract<RunResult, { category: "refactoring" }>;
-export type RunResultDoku = Extract<RunResult, { category: "doku" }>;
+export type RunResultDocs = Extract<RunResult, { category: "docs" }>;
 export type RunResultMarketing = Extract<RunResult, { category: "marketing" }>;
-export type RunResultSonstige = Extract<RunResult, { category: "sonstige" }>;
+export type RunResultOther = Extract<RunResult, { category: "other" }>;

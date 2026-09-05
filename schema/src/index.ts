@@ -1,39 +1,39 @@
-// Öffentliche API des Schema-Packages. CLI und Backend importieren
-// ausschließlich von hier (siehe README.md) — keine Imports aus tieferen
-// Pfaden, damit die interne Struktur frei änderbar bleibt.
+// Public API of the schema package. CLI and backend import exclusively
+// from here (see README.md) — never from deeper paths, so the internal
+// structure stays free to change.
 
 export {
-  kategorieSchema,
-  codeNaheKategorien,
+  categorySchema,
+  codeAdjacentCategories,
   sizeBucketSchema,
   isolationTierSchema,
   iso8601Schema,
-  laufergebnisSchema,
+  runOutcomeSchema,
   severityCountsSchema,
   securityDeltaSchema,
   categoryMetricsDebuggingSchema,
   categoryMetricsRefactoringSchema,
-  categoryMetricsDokuSchema,
+  categoryMetricsDocsSchema,
   runResultSchema,
 } from "./schema.js";
 
 export type {
-  Kategorie,
+  Category,
   SizeBucket,
   IsolationTier,
-  Laufergebnis,
+  RunOutcome,
   SeverityCounts,
   SecurityDelta,
   CategoryMetricsDebuggingFeature,
   CategoryMetricsRefactoring,
-  CategoryMetricsDoku,
+  CategoryMetricsDocs,
   RunResult,
   RunResultDebugging,
   RunResultFeature,
   RunResultRefactoring,
-  RunResultDoku,
+  RunResultDocs,
   RunResultMarketing,
-  RunResultSonstige,
+  RunResultOther,
 } from "./types.js";
 
 export { validateRunResult, isRunResult } from "./validate.js";

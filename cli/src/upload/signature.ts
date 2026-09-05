@@ -1,12 +1,12 @@
 import { createHmac } from "node:crypto";
 
 /**
- * Lokale Signatur über den vollständigen Payload (ohne das `signature`-Feld
- * selbst) — verhindert nachträgliche Fälschung der übertragenen Daten
- * zwischen CLI und Backend, NICHT Manipulation an der Quelle selbst (Plan
- * Abschnitt 4, Feldkommentar). `signingSecret` verlässt nie diesen Rechner.
+ * Local signature over the full payload (excluding the `signature` field
+ * itself) — prevents tampering with the transmitted data between CLI and
+ * backend, NOT manipulation at the source itself (plan section 4, field
+ * comment). `signingSecret` never leaves this machine.
  */
-export function signiere(payloadOhneSignatur: Record<string, unknown>, signingSecret: string): string {
-  const kanonisch = JSON.stringify(payloadOhneSignatur, Object.keys(payloadOhneSignatur).sort());
-  return createHmac("sha256", signingSecret).update(kanonisch).digest("hex");
+export function sign(payloadWithoutSignature: Record<string, unknown>, signingSecret: string): string {
+  const canonical = JSON.stringify(payloadWithoutSignature, Object.keys(payloadWithoutSignature).sort());
+  return createHmac("sha256", signingSecret).update(canonical).digest("hex");
 }

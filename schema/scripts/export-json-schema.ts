@@ -1,6 +1,6 @@
-// Exportiert das Zod-Schema (Single Source of Truth, siehe src/schema.ts)
-// als JSON-Schema-Datei für die Laufzeitvalidierung im Backend (Phase 3).
-// Aufruf: npm run build:json-schema
+// Exports the Zod schema (single source of truth, see src/schema.ts) as a
+// JSON schema file for backend runtime validation (Phase 3).
+// Usage: npm run build:json-schema
 
 import { writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -18,4 +18,4 @@ const jsonSchema = zodToJsonSchema(runResultSchema, {
 const outPath = resolve(__dirname, "..", "run-result.schema.json");
 writeFileSync(outPath, JSON.stringify(jsonSchema, null, 2) + "\n", "utf-8");
 
-console.log(`JSON-Schema geschrieben nach ${outPath}`);
+console.log(`JSON schema written to ${outPath}`);

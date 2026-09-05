@@ -18,23 +18,23 @@ function isErrorList(result: unknown): result is ValidationError[] {
   return Array.isArray(result);
 }
 
-describe("validateRunResult — positive Fixtures", () => {
+describe("validateRunResult — positive fixtures", () => {
   const fixtures = loadFixtures("valid");
 
-  it("findet mindestens einen validen Fixture pro Kategorie", () => {
-    const kategorien = ["debugging", "feature", "refactoring", "doku", "marketing", "sonstige"];
-    for (const kategorie of kategorien) {
-      const passend = fixtures.some((f) => f.data.category === kategorie);
-      expect(passend, `kein valider Fixture für Kategorie "${kategorie}"`).toBe(true);
+  it("has at least one valid fixture per category", () => {
+    const categories = ["debugging", "feature", "refactoring", "docs", "marketing", "other"];
+    for (const category of categories) {
+      const found = fixtures.some((f) => f.data.category === category);
+      expect(found, `no valid fixture for category "${category}"`).toBe(true);
     }
   });
 
   for (const { name, data } of fixtures) {
-    it(`akzeptiert ${name}`, () => {
+    it(`accepts ${name}`, () => {
       const result = validateRunResult(data);
       if (isErrorList(result)) {
         throw new Error(
-          `${name} hätte gültig sein sollen, Fehler: ${JSON.stringify(result, null, 2)}`,
+          `${name} should have been valid, errors: ${JSON.stringify(result, null, 2)}`,
         );
       }
       expect(result.category).toBe(data.category);
@@ -42,38 +42,38 @@ describe("validateRunResult — positive Fixtures", () => {
   }
 });
 
-describe("validateRunResult — negative Fixtures", () => {
+describe("validateRunResult — negative fixtures", () => {
   const fixtures = loadFixtures("invalid");
 
-  it("hat mindestens 3 negative Fixtures", () => {
+  it("has at least 3 negative fixtures", () => {
     expect(fixtures.length).toBeGreaterThanOrEqual(3);
   });
 
   for (const { name, data } of fixtures) {
-    it(`lehnt ${name} ab`, () => {
+    it(`rejects ${name}`, () => {
       const result = validateRunResult(data);
-      expect(isErrorList(result), `${name} hätte abgelehnt werden sollen`).toBe(true);
+      expect(isErrorList(result), `${name} should have been rejected`).toBe(true);
       expect((result as ValidationError[]).length).toBeGreaterThan(0);
     });
   }
 });
 
-describe("validateRunResult — gezielte Regeln", () => {
-  it("lehnt security_delta != null bei category=marketing ab", () => {
+describe("validateRunResult — targeted rules", () => {
+  it("rejects security_delta != null for category=marketing", () => {
     const invalid = {
       ...JSON.parse(
         readFileSync(join(fixturesDir, "valid", "marketing.json"), "utf-8"),
       ),
       security_delta: {
-        mit_skill: { kritisch: 0, hoch: 0, mittel: 0, niedrig: 0 },
-        ohne_skill: { kritisch: 0, hoch: 0, mittel: 0, niedrig: 0 },
+        with_skill: { critical: 0, high: 0, medium: 0, low: 0 },
+        without_skill: { critical: 0, high: 0, medium: 0, low: 0 },
       },
     };
     const result = validateRunResult(invalid);
     expect(isErrorList(result)).toBe(true);
   });
 
-  it("akzeptiert security_delta === null bei code-naher Kategorie (kein Code-Artefakt entstanden)", () => {
+  it("accepts security_delta === null for a code-adjacent category (no code artifact produced)", () => {
     const valid = {
       ...JSON.parse(readFileSync(join(fixturesDir, "valid", "feature.json"), "utf-8")),
       security_delta: null,
@@ -82,17 +82,17 @@ describe("validateRunResult — gezielte Regeln", () => {
     expect(isErrorList(result)).toBe(false);
   });
 
-  it("lehnt content_ref gesetzt bei content_opt_in=false ab", () => {
+  it("rejects content_ref set while content_opt_in=false", () => {
     const invalid = {
-      ...JSON.parse(readFileSync(join(fixturesDir, "valid", "doku.json"), "utf-8")),
+      ...JSON.parse(readFileSync(join(fixturesDir, "valid", "docs.json"), "utf-8")),
       content_opt_in: false,
-      content_ref: "trotzdem_gesetzt",
+      content_ref: "set_anyway",
     };
     const result = validateRunResult(invalid);
     expect(isErrorList(result)).toBe(true);
   });
 
-  it("lehnt unbekannten isolation_tier ab", () => {
+  it("rejects an unknown isolation_tier", () => {
     const invalid = {
       ...JSON.parse(readFileSync(join(fixturesDir, "valid", "debugging.json"), "utf-8")),
       isolation_tier: "Z",

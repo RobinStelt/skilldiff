@@ -5,15 +5,14 @@ import { execFileSync } from "node:child_process";
 import type { LinkCapability } from "./types.js";
 
 /**
- * Probiert tatsächlich aus (statt zu raten), ob echte Symlinks funktionieren.
+ * Actually tests (instead of guessing) whether real symlinks work.
  *
- * Hintergrund (LOKAL-PROTOKOLL.md aus dem skill-matching-hook-Projekt):
- * `fs.symlink`/`ln -s` schlägt auf einer gewöhnlichen Windows-Installation
- * ohne aktivierten Developer Mode NICHT mit einem Fehler fehl, sondern
- * erzeugt je nach Werkzeug lautlos eine leere reguläre Datei. Deshalb reicht
- * ein try/catch um `symlinkSync` allein nicht — wir müssen nach dem
- * (vermeintlichen) Erstellen zusätzlich verifizieren, dass tatsächlich ein
- * Symlink entstanden ist, der auf das Ziel zeigt.
+ * Background (LOKAL-PROTOKOLL.md in the skill-matching-hook project):
+ * `fs.symlink`/`ln -s` does NOT fail with an error on a plain Windows
+ * install without Developer Mode enabled — depending on the tool, it
+ * silently creates an empty regular file instead. So a plain try/catch
+ * around `symlinkSync` isn't enough — after the (supposed) creation we also
+ * have to verify that a real symlink pointing at the target actually exists.
  */
 export function probeSymlinkCapability(): boolean {
   const dir = mkdtempSync(join(tmpdir(), "skill-ab-symlink-probe-"));
@@ -21,9 +20,9 @@ export function probeSymlinkCapability(): boolean {
   const link = join(dir, "link");
   try {
     mkdirSync(target);
-    // Bewusst "dir" statt "junction": wir wollen hier einen ECHTEN Symlink
-    // erzwingen, keine Junction (die hätte auf Windows auch ohne Developer
-    // Mode geklappt und würde das eigentliche Ergebnis verfälschen).
+    // Deliberately "dir" instead of "junction": we want to force a REAL
+    // symlink here, not a junction (which would succeed on Windows even
+    // without Developer Mode and would give a false-positive result).
     symlinkSync(target, link, "dir");
     const resolved = readlinkSync(link);
     return resolved.length > 0;
@@ -35,9 +34,9 @@ export function probeSymlinkCapability(): boolean {
 }
 
 /**
- * Probiert NTFS-Junctions (Windows-Fallback für Verzeichnisse). Auf
- * Nicht-Windows-Plattformen immer `false` — dort gibt es echte Symlinks,
- * eine Junction wäre kein sinnvoller zusätzlicher Fallback.
+ * Probes NTFS junctions (Windows fallback for directories). Always `false`
+ * on non-Windows platforms — there, real symlinks exist, so a junction
+ * wouldn't be a meaningful fallback.
  */
 export function probeJunctionCapability(): boolean {
   if (process.platform !== "win32") {

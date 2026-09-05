@@ -5,30 +5,29 @@ interface IstanbulSummary {
   total?: { lines?: { pct?: number }; statements?: { pct?: number } };
 }
 
-const KANDIDATEN_PFADE = [
+const CANDIDATE_PATHS = [
   "coverage/coverage-summary.json",
   "coverage/coverage-final-summary.json",
 ];
 
 /**
- * Liest Testabdeckung aus einem Istanbul/nyc-`coverage-summary.json`, falls
- * eines vom Prüfkommando erzeugt wurde. Liefert `0`, wenn keins gefunden
- * wird — das ist bewusst ein Platzhalter, kein "unbekannt" (das Schema
- * verlangt `test_coverage_pct: number`, keine `null`-Option). Nutzer, deren
- * Prüfkommando keinen Coverage-Report erzeugt, sollten eines mit
- * `--coverage`/vergleichbarem Flag angeben, sonst ist dieser Wert wenig
- * aussagekräftig.
+ * Reads test coverage from an Istanbul/nyc `coverage-summary.json`, if the
+ * check command produced one. Returns `0` if none is found — that's
+ * deliberately a placeholder, not "unknown" (the schema requires
+ * `test_coverage_pct: number`, no `null` option). Users whose check command
+ * doesn't produce a coverage report should add a `--coverage`/equivalent
+ * flag, otherwise this value is of limited use.
  */
-export function leseTestAbdeckung(workDir: string): number {
-  for (const relPfad of KANDIDATEN_PFADE) {
-    const pfad = join(workDir, relPfad);
-    if (!existsSync(pfad)) continue;
+export function readTestCoverage(workDir: string): number {
+  for (const relPath of CANDIDATE_PATHS) {
+    const path = join(workDir, relPath);
+    if (!existsSync(path)) continue;
     try {
-      const parsed = JSON.parse(readFileSync(pfad, "utf-8")) as IstanbulSummary;
+      const parsed = JSON.parse(readFileSync(path, "utf-8")) as IstanbulSummary;
       const pct = parsed.total?.lines?.pct ?? parsed.total?.statements?.pct;
       if (typeof pct === "number") return pct;
     } catch {
-      // unlesbarer/fremder Report-Aufbau -> weiter zum nächsten Kandidaten
+      // unreadable/unfamiliar report shape -> try the next candidate
     }
   }
   return 0;

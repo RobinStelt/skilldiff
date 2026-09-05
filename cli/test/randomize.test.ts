@@ -1,26 +1,26 @@
 import { describe, expect, it } from "vitest";
-import { randomisiereReihenfolge } from "../src/orchestration/randomize.js";
+import { randomizeOrder } from "../src/orchestration/randomize.js";
 
-describe("randomisiereReihenfolge", () => {
-  it("liefert mit_skill zuerst, wenn rng < 0.5", () => {
-    const r = randomisiereReihenfolge(() => 0.1);
-    expect(r.erste).toBe("mit_skill");
-    expect(r.zweite).toBe("ohne_skill");
-    expect(r.randomisiert).toBe(true);
+describe("randomizeOrder", () => {
+  it("puts with_skill first when rng < 0.5", () => {
+    const r = randomizeOrder(() => 0.1);
+    expect(r.first).toBe("with_skill");
+    expect(r.second).toBe("without_skill");
+    expect(r.randomized).toBe(true);
   });
 
-  it("liefert ohne_skill zuerst, wenn rng >= 0.5", () => {
-    const r = randomisiereReihenfolge(() => 0.9);
-    expect(r.erste).toBe("ohne_skill");
-    expect(r.zweite).toBe("mit_skill");
+  it("puts without_skill first when rng >= 0.5", () => {
+    const r = randomizeOrder(() => 0.9);
+    expect(r.first).toBe("without_skill");
+    expect(r.second).toBe("with_skill");
   });
 
-  it("liefert bei vielen Durchläufen beide Bedingungen als erste (kein Bias durch Implementierungsfehler)", () => {
-    const ergebnisse = new Set<string>();
+  it("produces both conditions as first over many runs (no bias from an implementation bug)", () => {
+    const results = new Set<string>();
     for (let i = 0; i < 50; i++) {
-      ergebnisse.add(randomisiereReihenfolge(Math.random).erste);
+      results.add(randomizeOrder(Math.random).first);
     }
-    expect(ergebnisse.has("mit_skill")).toBe(true);
-    expect(ergebnisse.has("ohne_skill")).toBe(true);
+    expect(results.has("with_skill")).toBe(true);
+    expect(results.has("without_skill")).toBe(true);
   });
 });

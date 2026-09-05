@@ -9,4 +9,4 @@ export {
 } from "./gating.js";
 export type { IsolatedHome } from "./gating.js";
 export { buildDockerRunArgs, dockerMountPaths } from "./dockerRun.js";
-export type { LinkCapability, TierDetectionResult, Bedingung } from "./types.js";
+export type { LinkCapability, TierDetectionResult, Condition } from "./types.js";

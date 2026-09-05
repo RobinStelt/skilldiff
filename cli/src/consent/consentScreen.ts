@@ -1,62 +1,62 @@
 import prompts from "prompts";
 import pc from "picocolors";
 
-const UEBERTRAGENE_FELDER = [
-  "skill_id, account_id (Pseudonym), signature",
+const TRANSMITTED_FIELDS = [
+  "skill_id, account_id (pseudonym), signature",
   "category, size_bucket, isolation_tier",
-  "mit_skill/ohne_skill: erfolg, tokens, dauer_sek",
-  "security_delta (nur Anzahl pro Severity-Stufe, niemals der volle Scan-Report)",
-  "category_metrics (kategoriespezifische Zahlen, nie Freitext)",
-  "run_id, reihenfolge_randomisiert, timestamp, claude_version, cli_version, cli_build_hash",
+  "with_skill/without_skill: success, tokens, duration_sec",
+  "security_delta (only counts per severity level, never the full scan report)",
+  "category_metrics (category-specific numbers, never free text)",
+  "run_id, order_randomized, timestamp, claude_version, cli_version, cli_build_hash",
 ];
 
-export interface ConsentEntscheidung {
-  standardConsentErteilt: boolean;
+export interface ConsentDecision {
+  standardConsentGiven: boolean;
   contentOptIn: boolean;
 }
 
 /**
- * Zeigt den einmaligen Consent-Screen (nur beim allerersten Lauf, Briefing
- * Punkt 8). Zwei getrennte Fragen — Standard-Consent ist Voraussetzung fürs
- * Weiterlaufen, `content_opt_in` (Blindvoting-Content) ist ein bewusst
- * separates, ZUSÄTZLICHES Opt-in und wird nie automatisch mitbejaht.
+ * Shows the one-time consent screen (only on the very first run, briefing
+ * point 8). Two separate questions — standard consent is a prerequisite to
+ * continue, `content_opt_in` (blind-voting content) is a deliberately
+ * separate, ADDITIONAL opt-in and is never auto-confirmed.
  */
-export async function zeigeConsentScreen(): Promise<ConsentEntscheidung> {
-  console.log(pc.bold("\nSkill-A/B-Marktplatz — einmaliger Consent\n"));
-  console.log("Nach jedem Vergleichslauf werden diese Felder automatisch übertragen:");
-  for (const feld of UEBERTRAGENE_FELDER) {
-    console.log(`  • ${feld}`);
+export async function showConsentScreen(): Promise<ConsentDecision> {
+  console.log(pc.bold("\nSkill-A/B Marketplace — one-time consent\n"));
+  console.log("After every comparison run, these fields are transmitted automatically:");
+  for (const field of TRANSMITTED_FIELDS) {
+    console.log(`  • ${field}`);
   }
   console.log(
     pc.dim(
-      "\nNiemals übertragen: Rohcode, Prompt-Inhalte, Dateiinhalte deines Projekts.\n",
+      "\nNever transmitted: raw code, prompt content, your project's file contents.\n",
     ),
   );
 
-  const { standardConsentErteilt } = await prompts({
+  const { standardConsentGiven } = await prompts({
     type: "confirm",
-    name: "standardConsentErteilt",
-    message: "Diese Metadaten bei jedem Lauf automatisch übertragen?",
+    name: "standardConsentGiven",
+    message: "Transmit this metadata automatically after every run?",
     initial: false,
   });
 
   console.log(
     pc.dim(
-      "\nZusätzlich, GETRENNT vom obigen Consent: Community-Blindvoting (Phase 7)\n" +
-        "möchte anonymisierte Output-Paare (dein tatsächlicher Text-/Code-Output)\n" +
-        "vergleichen lassen. Das ist ein separates Opt-in, nicht in obigem enthalten.\n",
+      "\nAdditionally, SEPARATE from the consent above: community blind voting\n" +
+        "(Phase 7) wants to compare anonymized output pairs (your actual text/code\n" +
+        "output). This is a separate opt-in, not included in the above.\n",
     ),
   );
 
   const { contentOptIn } = await prompts({
     type: "confirm",
     name: "contentOptIn",
-    message: "Zusätzlich am Community-Blindvoting mit deinem Output teilnehmen (content_opt_in)?",
+    message: "Additionally participate in community blind voting with your output (content_opt_in)?",
     initial: false,
   });
 
   return {
-    standardConsentErteilt: Boolean(standardConsentErteilt),
+    standardConsentGiven: Boolean(standardConsentGiven),
     contentOptIn: Boolean(contentOptIn),
   };
 }

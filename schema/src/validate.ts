@@ -3,7 +3,7 @@ import { runResultSchema } from "./schema.js";
 import type { RunResult } from "./types.js";
 
 export interface ValidationError {
-  /** Feldpfad innerhalb des RunResult-Objekts, z.B. "category_metrics.mit_skill.lint_errors". */
+  /** Field path within the RunResult object, e.g. "category_metrics.with_skill.lint_errors". */
   path: string;
   message: string;
 }
@@ -16,17 +16,17 @@ function toValidationErrors(error: z.ZodError): ValidationError[] {
 }
 
 /**
- * Validiert unbekannte Eingabedaten gegen das `RunResult`-Schema.
+ * Validates unknown input data against the `RunResult` schema.
  *
- * Prüft insbesondere (Akzeptanzkriterien Phase 1):
- * - `security_delta` ist `null`, wenn `category` nicht in einer code-nahen
- *   Kategorie liegt (debugging, feature, refactoring) — für marketing/doku/
- *   sonstige ist ein gesetzter Wert ein Validierungsfehler.
- * - `content_ref` ist nur gesetzt, wenn `content_opt_in === true`.
- * - `isolation_tier` ist einer von "A"/"B"/"C", kein anderer Wert.
+ * In particular, checks (Phase 1 acceptance criteria):
+ * - `security_delta` is `null` when `category` is not one of the
+ *   code-adjacent categories (debugging, feature, refactoring) — for
+ *   marketing/docs/other, a set value is a validation error.
+ * - `content_ref` is only set when `content_opt_in === true`.
+ * - `isolation_tier` is one of "A"/"B"/"C", no other value.
  *
- * @returns das validierte, typisierte `RunResult` bei Erfolg, sonst eine
- *   Liste aller gefundenen Validierungsfehler (nicht nur des ersten).
+ * @returns the validated, typed `RunResult` on success, otherwise a list
+ *   of all validation errors found (not just the first).
  */
 export function validateRunResult(data: unknown): RunResult | ValidationError[] {
   const result = runResultSchema.safeParse(data);
@@ -36,7 +36,7 @@ export function validateRunResult(data: unknown): RunResult | ValidationError[] 
   return toValidationErrors(result.error);
 }
 
-/** Type-Guard-Variante für Call-Sites, die kein Errors-Array brauchen. */
+/** Type-guard variant for call sites that don't need an errors array. */
 export function isRunResult(data: unknown): data is RunResult {
   return runResultSchema.safeParse(data).success;
 }

@@ -2,53 +2,53 @@ import { describe, expect, it, afterEach } from "vitest";
 import { mkdtempSync, rmSync, existsSync, readFileSync, readdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { sendeRunResult } from "../src/upload/submit.js";
+import { submitRunResult } from "../src/upload/submit.js";
 import { buildRunResult } from "../src/buildRunResult.js";
 
-const validesRunResult = buildRunResult({
+const validRunResult = buildRunResult({
   skillId: "skill_test",
   accountId: "acct_test",
-  signingSecret: "geheim",
-  kategorie: "sonstige",
-  sizeBucket: "klein",
+  signingSecret: "secret",
+  category: "other",
+  sizeBucket: "small",
   isolationTier: "C",
-  mitSkillLaufergebnis: { erfolg: null, tokens: 100, dauer_sek: 5 },
-  ohneSkillLaufergebnis: { erfolg: null, tokens: 120, dauer_sek: 6 },
+  withSkillRunOutcome: { success: null, tokens: 100, duration_sec: 5 },
+  withoutSkillRunOutcome: { success: null, tokens: 120, duration_sec: 6 },
   securityDelta: null,
-  mitSkillMetrics: null,
-  ohneSkillMetrics: null,
+  withSkillMetrics: null,
+  withoutSkillMetrics: null,
   contentOptIn: false,
   contentRef: null,
-  reihenfolgeRandomisiert: true,
+  orderRandomized: true,
   claudeVersion: "claude-sonnet-5",
   cliVersion: "0.1.0",
   cliBuildHash: "abc123",
 });
 
-describe("sendeRunResult", () => {
+describe("submitRunResult", () => {
   let mockDir: string;
 
   afterEach(() => {
     if (mockDir) rmSync(mockDir, { recursive: true, force: true });
   });
 
-  it("schreibt im Mock-Modus (kein endpointUrl) eine validierte Datei", async () => {
+  it("writes a validated file in mock mode (no endpointUrl)", async () => {
     mockDir = mkdtempSync(join(tmpdir(), "skill-ab-mock-"));
-    const ergebnis = await sendeRunResult(validesRunResult, { mockVerzeichnis: mockDir });
-    expect(ergebnis.ok).toBe(true);
-    if (ergebnis.ok) {
-      expect(ergebnis.modus).toBe("mock");
-      expect(existsSync(ergebnis.ziel)).toBe(true);
-      const gespeichert = JSON.parse(readFileSync(ergebnis.ziel, "utf-8"));
-      expect(gespeichert.run_id).toBe(validesRunResult.run_id);
+    const result = await submitRunResult(validRunResult, { mockDir });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.mode).toBe("mock");
+      expect(existsSync(result.target)).toBe(true);
+      const saved = JSON.parse(readFileSync(result.target, "utf-8"));
+      expect(saved.run_id).toBe(validRunResult.run_id);
     }
   });
 
-  it("lehnt ungültige Payloads ab, BEVOR irgendetwas geschrieben/gesendet wird", async () => {
+  it("rejects invalid payloads BEFORE anything is written/sent", async () => {
     mockDir = mkdtempSync(join(tmpdir(), "skill-ab-mock-"));
-    const ungueltig = { ...validesRunResult, isolation_tier: "Z" };
-    const ergebnis = await sendeRunResult(ungueltig, { mockVerzeichnis: mockDir });
-    expect(ergebnis.ok).toBe(false);
+    const invalid = { ...validRunResult, isolation_tier: "Z" };
+    const result = await submitRunResult(invalid, { mockDir });
+    expect(result.ok).toBe(false);
     expect(readdirSync(mockDir)).toHaveLength(0);
   });
 });

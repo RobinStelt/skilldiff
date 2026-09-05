@@ -1,12 +1,12 @@
 import { mkdtempSync, cpSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { IsolationTier, Laufergebnis } from "@marktplatz/schema";
-import type { LinkCapability, Bedingung } from "../isolation/types.js";
+import type { IsolationTier, RunOutcome } from "@marktplatz/schema";
+import type { LinkCapability, Condition } from "../isolation/types.js";
 import { applyTierBGate, createIsolatedHome } from "../isolation/gating.js";
 import { runCondition } from "./runCondition.js";
 import type { ProcessRunner } from "./processRunner.js";
-import { randomisiereReihenfolge } from "./randomize.js";
+import { randomizeOrder } from "./randomize.js";
 
 export interface Invocation {
   bin: string;
@@ -16,65 +16,64 @@ export interface Invocation {
 export interface OrchestratorParams {
   runner: ProcessRunner;
   /**
-   * Baut den tatsächlichen Aufruf für EINE Bedingung in EINEM Arbeits-
-   * verzeichnis. Für Tier B/C üblicherweise ein direkter `claude`-Aufruf,
-   * für Tier A ein `docker run ...`-Wrapper (siehe `isolation/dockerRun.ts`)
-   * — der Orchestrator selbst kennt den Unterschied nicht, er ruft nur auf.
+   * Builds the actual invocation for ONE condition in ONE working
+   * directory. For Tier B/C this is usually a direct `claude` call, for
+   * Tier A a `docker run ...` wrapper (see `isolation/dockerRun.ts`) — the
+   * orchestrator itself doesn't know the difference, it just invokes.
    */
-  buildInvocation: (bedingung: Bedingung, workDirKopie: string) => Invocation;
+  buildInvocation: (condition: Condition, workDirCopy: string) => Invocation;
   originalWorkDir: string;
   skillId: string;
   skillSourceDir: string | null;
   tier: IsolationTier;
-  linkFaehigkeit: LinkCapability;
+  linkCapability: LinkCapability;
   checkCommand: { cmd: string; args: string[] } | null;
   rng?: () => number;
 }
 
 export interface ConditionOutcome {
-  bedingung: Bedingung;
-  laufergebnis: Laufergebnis;
-  /** Frische Arbeitskopie, in der diese Bedingung gelaufen ist — Basis für Kategorie-/Security-Analyse danach. */
-  workDirKopie: string;
+  condition: Condition;
+  runOutcome: RunOutcome;
+  /** Fresh working copy this condition ran in — the basis for category/security analysis afterwards. */
+  workDirCopy: string;
 }
 
 export interface OrchestratorResult {
-  reihenfolgeRandomisiert: boolean;
-  mitSkill: ConditionOutcome;
-  ohneSkill: ConditionOutcome;
+  orderRandomized: boolean;
+  withSkill: ConditionOutcome;
+  withoutSkill: ConditionOutcome;
 }
 
 /**
- * Kopiert das Original-Arbeitsverzeichnis in ein frisches Temp-Verzeichnis.
+ * Copies the original working directory into a fresh temp directory.
  *
- * Notwendig für "frische, voneinander isolierte Sessions — kein gemeinsamer
- * Kontext zwischen den beiden Bedingungen" (Briefing, Punkt 1): würden beide
- * Bedingungen im selben Verzeichnis laufen, könnten Dateiänderungen aus dem
- * ersten Lauf den zweiten beeinflussen, und die Reihenfolge würde das
- * Ergebnis verzerren statt nur die Anzeige.
+ * Needed for "fresh, mutually isolated sessions — no shared context between
+ * the two conditions" (briefing, point 1): if both conditions ran in the
+ * same directory, file changes from the first run could influence the
+ * second, and the order would skew the result instead of just its display.
  */
-function frischeArbeitskopie(originalWorkDir: string, bedingung: Bedingung): string {
-  const kopie = mkdtempSync(join(tmpdir(), `skill-ab-${bedingung}-`));
-  cpSync(originalWorkDir, kopie, { recursive: true });
-  return kopie;
+function freshWorkDirCopy(originalWorkDir: string, condition: Condition): string {
+  const copy = mkdtempSync(join(tmpdir(), `skill-ab-${condition}-`));
+  cpSync(originalWorkDir, copy, { recursive: true });
+  return copy;
 }
 
-async function fuehreBedingungAus(params: {
+async function runOneCondition(params: {
   o: OrchestratorParams;
-  bedingung: Bedingung;
+  condition: Condition;
 }): Promise<ConditionOutcome> {
-  const { o, bedingung } = params;
-  const workDirKopie = frischeArbeitskopie(o.originalWorkDir, bedingung);
+  const { o, condition } = params;
+  const workDirCopy = freshWorkDirCopy(o.originalWorkDir, condition);
   const isolatedHome = createIsolatedHome();
 
   try {
     if (o.tier === "B" && o.skillSourceDir) {
       applyTierBGate({
-        workDir: workDirKopie,
+        workDir: workDirCopy,
         skillId: o.skillId,
         skillSourceDir: o.skillSourceDir,
-        bedingung,
-        linkFaehigkeit: o.linkFaehigkeit,
+        condition,
+        linkCapability: o.linkCapability,
       });
     }
 
@@ -84,42 +83,42 @@ async function fuehreBedingungAus(params: {
       USERPROFILE: isolatedHome.path,
     };
 
-    const invocation = o.buildInvocation(bedingung, workDirKopie);
-    const laufergebnis = await runCondition({
+    const invocation = o.buildInvocation(condition, workDirCopy);
+    const runOutcome = await runCondition({
       runner: o.runner,
       claudeBin: invocation.bin,
       claudeArgs: invocation.args,
-      workDir: workDirKopie,
+      workDir: workDirCopy,
       env,
       checkCommand: o.checkCommand,
     });
 
-    return { bedingung, laufergebnis, workDirKopie };
+    return { condition, runOutcome, workDirCopy };
   } finally {
     isolatedHome.cleanup();
-    // workDirKopie wird bewusst NICHT hier gelöscht — Kategorie-Erkennung
-    // und Security-Scan laufen danach noch auf den Kopien. Aufräumen ist
-    // Sache des Aufrufers (siehe cleanupWorkDirCopies).
+    // workDirCopy is deliberately NOT deleted here — category detection
+    // and the security scan still run on the copies afterwards. Cleanup is
+    // the caller's job (see cleanupWorkDirCopies).
   }
 }
 
 /**
- * Führt beide Bedingungen in randomisierter Reihenfolge aus. Genau 1
- * Durchlauf pro Bedingung (Briefing, Punkt 3) — kein Wiederholungszwang.
+ * Runs both conditions in randomized order. Exactly 1 run per condition
+ * (briefing, point 3) — no repetition.
  */
-export async function fuehreVergleichAus(o: OrchestratorParams): Promise<OrchestratorResult> {
-  const reihenfolge = randomisiereReihenfolge(o.rng);
+export async function runComparison(o: OrchestratorParams): Promise<OrchestratorResult> {
+  const order = randomizeOrder(o.rng);
 
-  const ergebnisErste = await fuehreBedingungAus({ o, bedingung: reihenfolge.erste });
-  const ergebnisZweite = await fuehreBedingungAus({ o, bedingung: reihenfolge.zweite });
+  const firstResult = await runOneCondition({ o, condition: order.first });
+  const secondResult = await runOneCondition({ o, condition: order.second });
 
-  const mitSkill = ergebnisErste.bedingung === "mit_skill" ? ergebnisErste : ergebnisZweite;
-  const ohneSkill = ergebnisErste.bedingung === "ohne_skill" ? ergebnisErste : ergebnisZweite;
+  const withSkill = firstResult.condition === "with_skill" ? firstResult : secondResult;
+  const withoutSkill = firstResult.condition === "without_skill" ? firstResult : secondResult;
 
-  return { reihenfolgeRandomisiert: reihenfolge.randomisiert, mitSkill, ohneSkill };
+  return { orderRandomized: order.randomized, withSkill, withoutSkill };
 }
 
 export function cleanupWorkDirCopies(result: OrchestratorResult): void {
-  rmSync(result.mitSkill.workDirKopie, { recursive: true, force: true });
-  rmSync(result.ohneSkill.workDirKopie, { recursive: true, force: true });
+  rmSync(result.withSkill.workDirCopy, { recursive: true, force: true });
+  rmSync(result.withoutSkill.workDirCopy, { recursive: true, force: true });
 }

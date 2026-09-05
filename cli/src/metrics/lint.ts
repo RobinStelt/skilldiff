@@ -10,13 +10,13 @@ interface EslintFileResult {
 }
 
 /**
- * Zählt Lint-Fehler via ESLint, falls ein ESLint-Setup erkennbar ist
- * (`eslint.config.*` oder `.eslintrc*`). `0`, wenn kein Setup gefunden wird
- * oder ESLint nicht installiert ist — kein Fehlerfall, viele Projekte nutzen
- * andere Linter, deren Integration erst mit echtem Bedarf nachgezogen wird.
+ * Counts lint errors via ESLint, if an ESLint setup is detectable
+ * (`eslint.config.*` or `.eslintrc*`). `0` if no setup is found or ESLint
+ * isn't installed — not an error case, many projects use a different
+ * linter whose integration will be added once there's real demand.
  */
-export async function zaehleLintFehler(workDir: string): Promise<number> {
-  const hatEslintConfig = [
+export async function countLintErrors(workDir: string): Promise<number> {
+  const hasEslintConfig = [
     "eslint.config.js",
     "eslint.config.mjs",
     "eslint.config.cjs",
@@ -26,27 +26,27 @@ export async function zaehleLintFehler(workDir: string): Promise<number> {
     ".eslintrc.cjs",
   ].some((f) => existsSync(join(workDir, f)));
 
-  if (!hatEslintConfig) return 0;
+  if (!hasEslintConfig) return 0;
 
   try {
     const { stdout } = await execAsync("npx --no-install eslint . --format json", {
       cwd: workDir,
       maxBuffer: 20 * 1024 * 1024,
     });
-    return summiere(stdout);
+    return sum(stdout);
   } catch (err) {
     const e = err as { stdout?: string };
     if (typeof e.stdout === "string" && e.stdout.length > 0) {
-      return summiere(e.stdout);
+      return sum(e.stdout);
     }
     return 0;
   }
 }
 
-function summiere(stdout: string): number {
+function sum(stdout: string): number {
   try {
     const parsed = JSON.parse(stdout) as EslintFileResult[];
-    return parsed.reduce((sum, file) => sum + (file.errorCount ?? 0), 0);
+    return parsed.reduce((total, file) => total + (file.errorCount ?? 0), 0);
   } catch {
     return 0;
   }

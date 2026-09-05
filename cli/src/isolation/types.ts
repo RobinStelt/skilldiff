@@ -1,22 +1,22 @@
 import type { IsolationTier } from "@marktplatz/schema";
 
 export interface LinkCapability {
-  /** Echte POSIX-Symlinks funktionieren (z.B. macOS/Linux, oder Windows mit Developer Mode). */
+  /** Real POSIX symlinks work (e.g. macOS/Linux, or Windows with Developer Mode). */
   symlink: boolean;
-  /** NTFS-Junction funktioniert (Windows-Fallback für Verzeichnisse, kein Admin/Dev-Mode nötig). */
+  /** NTFS junction works (Windows fallback for directories, no admin/dev mode needed). */
   junction: boolean;
 }
 
 export interface TierDetectionResult {
   tier: IsolationTier;
-  /** Menschenlesbare Begründung, warum genau diese Stufe erkannt wurde (für Logs/Debugging). */
-  begruendung: string;
-  dockerVerfuegbar: boolean;
-  linkFaehigkeit: LinkCapability;
+  /** Human-readable reason this exact tier was detected (for logs/debugging). */
+  reason: string;
+  dockerAvailable: boolean;
+  linkCapability: LinkCapability;
 }
 
 /**
- * Wie eine Skill-Quelle für eine Bedingung ("mit_skill"/"ohne_skill")
- * sichtbar gemacht bzw. verborgen wird.
+ * How a skill source is made visible or hidden for a condition
+ * ("with_skill"/"without_skill").
  */
-export type Bedingung = "mit_skill" | "ohne_skill";
+export type Condition = "with_skill" | "without_skill";

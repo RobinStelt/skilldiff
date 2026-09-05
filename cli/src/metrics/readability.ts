@@ -1,11 +1,11 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, extname } from "node:path";
 
-const DOKU_EXTENSIONS = new Set([".md", ".mdx", ".rst", ".adoc", ".txt"]);
-const IGNORIERTE_ORDNER = new Set(["node_modules", ".git", "dist", "build"]);
+const DOCS_EXTENSIONS = new Set([".md", ".mdx", ".rst", ".adoc", ".txt"]);
+const IGNORED_DIRS = new Set(["node_modules", ".git", "dist", "build"]);
 
-function sammleDokuText(dir: string): string {
-  const teile: string[] = [];
+function collectDocsText(dir: string): string {
+  const parts: string[] = [];
 
   function traverse(current: string): void {
     let entries: string[];
@@ -15,7 +15,7 @@ function sammleDokuText(dir: string): string {
       return;
     }
     for (const entry of entries) {
-      if (IGNORIERTE_ORDNER.has(entry)) continue;
+      if (IGNORED_DIRS.has(entry)) continue;
       const fullPath = join(current, entry);
       let info: ReturnType<typeof statSync>;
       try {
@@ -27,48 +27,46 @@ function sammleDokuText(dir: string): string {
         traverse(fullPath);
         continue;
       }
-      if (DOKU_EXTENSIONS.has(extname(entry).toLowerCase())) {
+      if (DOCS_EXTENSIONS.has(extname(entry).toLowerCase())) {
         try {
-          teile.push(readFileSync(fullPath, "utf-8"));
+          parts.push(readFileSync(fullPath, "utf-8"));
         } catch {
-          // ignorieren
+          // ignore
         }
       }
     }
   }
 
   traverse(dir);
-  return teile.join("\n");
+  return parts.join("\n");
 }
 
-function zaehleSilben(wort: string): number {
-  const bereinigt = wort.toLowerCase().replace(/[^a-zäöüß]/g, "");
-  if (bereinigt.length === 0) return 0;
-  const vokalGruppen = bereinigt.match(/[aeiouyäöü]+/g);
-  return Math.max(1, vokalGruppen?.length ?? 1);
+function countSyllables(word: string): number {
+  const cleaned = word.toLowerCase().replace(/[^a-z]/g, "");
+  if (cleaned.length === 0) return 0;
+  const vowelGroups = cleaned.match(/[aeiouy]+/g);
+  return Math.max(1, vowelGroups?.length ?? 1);
 }
 
 /**
- * Lesbarkeits-Score nach dem Flesch-Reading-Ease-Prinzip, mit der für
- * deutsche Texte gebräuchlichen Formel (Amstad 1978):
+ * Readability score based on the Flesch Reading Ease formula:
  *
- *   206.835 - 1.015 * (Wörter/Sätze) - 84.6 * (Silben/Wörter)
+ *   206.835 - 1.015 * (words/sentences) - 84.6 * (syllables/words)
  *
- * Höher = leichter lesbar. Silbenzählung ist eine Vokalgruppen-Heuristik,
- * keine linguistisch exakte Trennung — für einen relativen
- * Vorher/Nachher-Vergleich (mit vs. ohne Skill) ausreichend konsistent,
- * nicht gedacht als absolute Wahrheit.
+ * Higher = easier to read. Syllable counting is a vowel-group heuristic,
+ * not linguistically exact — consistent enough for a relative
+ * before/after comparison (with vs. without skill), not meant as an
+ * absolute truth.
  *
- * `0`, wenn kein auswertbarer Text (keine Doku-Dateien oder keine Sätze)
- * gefunden wurde.
+ * `0` if no evaluable text was found (no docs files or no sentences).
  */
-export function berechneLesbarkeitsScore(workDir: string): number {
-  const text = sammleDokuText(workDir);
-  const saetze = (text.match(/[.!?]+/g)?.length ?? 0) || 1;
-  const woerter = text.split(/\s+/).filter((w) => w.length > 0);
-  if (woerter.length === 0) return 0;
+export function computeReadabilityScore(workDir: string): number {
+  const text = collectDocsText(workDir);
+  const sentences = (text.match(/[.!?]+/g)?.length ?? 0) || 1;
+  const words = text.split(/\s+/).filter((w) => w.length > 0);
+  if (words.length === 0) return 0;
 
-  const silben = woerter.reduce((sum, wort) => sum + zaehleSilben(wort), 0);
-  const score = 206.835 - 1.015 * (woerter.length / saetze) - 84.6 * (silben / woerter.length);
+  const syllables = words.reduce((total, word) => total + countSyllables(word), 0);
+  const score = 206.835 - 1.015 * (words.length / sentences) - 84.6 * (syllables / words.length);
   return Math.round(score * 10) / 10;
 }

@@ -2,10 +2,10 @@ import { readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import type { SizeBucket } from "@marktplatz/schema";
 
-const IGNORIERTE_ORDNER = new Set(["node_modules", ".git", "dist", "build", ".venv", "__pycache__"]);
+const IGNORED_DIRS = new Set(["node_modules", ".git", "dist", "build", ".venv", "__pycache__"]);
 
-function zaehleDateien(dir: string): number {
-  let anzahl = 0;
+function countFiles(dir: string): number {
+  let count = 0;
   function traverse(current: string): void {
     let entries: string[];
     try {
@@ -14,7 +14,7 @@ function zaehleDateien(dir: string): number {
       return;
     }
     for (const entry of entries) {
-      if (IGNORIERTE_ORDNER.has(entry)) continue;
+      if (IGNORED_DIRS.has(entry)) continue;
       const fullPath = join(current, entry);
       let info: ReturnType<typeof statSync>;
       try {
@@ -25,23 +25,23 @@ function zaehleDateien(dir: string): number {
       if (info.isDirectory()) {
         traverse(fullPath);
       } else {
-        anzahl += 1;
+        count += 1;
       }
     }
   }
   traverse(dir);
-  return anzahl;
+  return count;
 }
 
 /**
- * Automatisch aus der Dateizahl abgeleitet (Plan Abschnitt 4: "automatisch
- * aus Dateizahl/LOC abgeleitet"). Nur Dateizahl, keine LOC-Zählung — für
- * eine grobe Drei-Stufen-Einteilung reicht das, und es bleibt sprach- und
- * encoding-unabhängig (keine Notwendigkeit, jede Datei einzulesen).
+ * Automatically derived from the file count (plan section 4: "automatically
+ * derived from file count/LOC"). File count only, no LOC counting — good
+ * enough for a rough three-way split, and it stays language- and
+ * encoding-independent (no need to read every file).
  */
-export function bestimmeGroessenklasse(workDir: string): SizeBucket {
-  const anzahl = zaehleDateien(workDir);
-  if (anzahl < 20) return "klein";
-  if (anzahl < 150) return "mittel";
-  return "groß";
+export function determineSizeBucket(workDir: string): SizeBucket {
+  const count = countFiles(workDir);
+  if (count < 20) return "small";
+  if (count < 150) return "medium";
+  return "large";
 }

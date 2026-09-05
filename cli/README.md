@@ -1,67 +1,70 @@
-# skill-ab — CLI-Kern (Phase 2)
+# skill-ab — CLI core (Phase 2)
 
-Setzt `03-marktplatz-phase2-cli-kern.md` um. Voller Kontext:
-`../skill-ab-marktplatz-plan.md`, Abschnitt 3 (Isolation) und 5 (Bewertung).
+Implements `03-marktplatz-phase2-cli-kern.md`. Full context:
+`../skill-ab-marktplatz-plan.md`, sections 3 (isolation) and 5 (evaluation) —
+written in German, the project's planning language. Source code (this
+package and `../schema`) is English-only; see the repo-root `CLAUDE.md` for
+that convention.
 
-## Nutzung
+## Usage
 
 ```bash
 npm install
 npm run dev -- run \
   --skill <skill-id> \
-  --dir <arbeitsverzeichnis> \
-  --skill-source <skill-quelle, MUSS außerhalb von --dir liegen> \
-  --aufgabe "<Aufgabenbeschreibung>" \
+  --dir <working-directory> \
+  --skill-source <skill-source, MUST live outside --dir> \
+  --task "<task description>" \
   --check "npm test"
 ```
 
-Beim allerersten Lauf erscheint einmalig der Consent-Screen (Briefing Punkt
-8). Danach läuft jeder weitere Aufruf ohne Rückfrage — die Entscheidung wird
-unter `~/.skill-ab/config.json` gespeichert (pseudonyme `account_id`, lokaler
-Signierschlüssel, Consent-Status).
+The consent screen appears once, on the very first run (briefing point 8).
+Every subsequent call runs without asking — the decision is stored under
+`~/.skill-ab/config.json` (pseudonymous `account_id`, local signing secret,
+consent status).
 
-Ohne `--endpoint` läuft der Upload gegen einen lokalen Mock
-(`.skill-ab-mock-uploads/<run_id>.json`) — Phase 3 (echter Backend-Endpoint)
-existiert noch nicht.
+Without `--endpoint`, the upload runs against a local mock
+(`.skill-ab-mock-uploads/<run_id>.json`) — Phase 3 (the real backend
+endpoint) doesn't exist yet.
 
-## Architektur
+## Architecture
 
 ```
 src/
-  isolation/     Tier-Erkennung (A/B/C) + Gating (Symlink/Junction, Docker-Args)
-  orchestration/ Randomisierte Reihenfolge, frische Arbeitskopien, Prozessausführung
-  category/      Automatische Kategorie- und Größenklassen-Erkennung
-  security/      Semgrep/npm audit/bandit -> SeverityCounts-Delta
-  metrics/       Kategoriespezifische Zusatzmetriken (Coverage, Lint, Komplexität, Lesbarkeit)
-  consent/       Einmaliger Consent-Screen
-  config/        Lokale, persistente Config (~/.skill-ab/config.json)
-  upload/        Signatur + Validierung (Schema-Package) + Versand/Mock
-  buildRunResult.ts  Baut den finalen, typisierten RunResult zusammen
+  isolation/     Tier detection (A/B/C) + gating (symlink/junction, docker args)
+  orchestration/ Randomized order, fresh working copies, process execution
+  category/      Automatic category and size-bucket detection
+  security/      Semgrep/npm audit/bandit -> SeverityCounts delta
+  metrics/       Category-specific extra metrics (coverage, lint, complexity, readability)
+  consent/       One-time consent screen
+  config/        Local, persistent config (~/.skill-ab/config.json)
+  upload/        Signature + validation (schema package) + submit/mock
+  buildRunResult.ts  Assembles the final, typed RunResult
 ```
 
-## Isolationsstufen — Umsetzungsstatus
+## Isolation tiers — implementation status
 
-| Tier | Umsetzung |
+| Tier | Implementation |
 |---|---|
-| **A** (Docker/Podman) | `docker info`/`podman info` wird tatsächlich ausgeführt, nicht geraten. Der `docker run`-Aufruf selbst (`isolation/dockerRun.ts`) mountet ausschließlich das Arbeitsverzeichnis und — nur bei `mit_skill` — den einen erlaubten Skill-Ordner. **Voraussetzung, die diese Phase NICHT liefert:** ein Docker-Image mit vorinstallierter `claude`-CLI (Default-Name `skill-ab/claude-runner:latest`, überschreibbar per `--docker-image`). Ohne dieses Image bricht der Container-Aufruf ab — in einem lokalen Rauchtest mit echtem, laufendem Docker reproduziert und dokumentiert, kein Rätselraten. |
-| **B** (Symlink/Junction + isoliertes Home) | Vollständig umgesetzt, inkl. echtem Fähigkeitstest statt Plattform-Annahme. Direkte Lehre aus `../../skill-matching-hook/skill-gate-test/LOKAL-PROTOKOLL.md`: `fs.symlinkSync` wird real ausprobiert und per `readlinkSync` verifiziert (nicht nur try/catch, weil `ln -s` auf Windows ohne Developer Mode lautlos eine leere Datei statt eines Symlinks erzeugt); NTFS-Junction ist der automatische Fallback. Jede Bedingung bekommt zusätzlich ein frisches, leeres `$HOME`/`%USERPROFILE%` — notwendig, weil `--setting-sources project` allein nachweislich NICHT ausreicht, um global aktivierte Plugin-Skills fernzuhalten (ebenfalls im Lokal-Protokoll bestätigt). |
-| **C** (Best-Effort) | Läuft ohne jede Isolationsgarantie im (kopierten) Original-Arbeitsverzeichnis — bewusst niedrigste Vertrauensstufe, kein zusätzlicher Code nötig. |
+| **A** (Docker/Podman) | `docker info`/`podman info` is actually executed, not guessed. The `docker run` call itself (`isolation/dockerRun.ts`) mounts only the working directory and — only for `with_skill` — the one allowed skill folder. **Prerequisite this phase does NOT deliver:** a Docker image with the `claude` CLI preinstalled (default name `skill-ab/claude-runner:latest`, overridable via `--docker-image`). Without that image, the container call fails — reproduced and documented in a local smoke test with real, running Docker, no guesswork. |
+| **B** (symlink/junction + isolated home) | Fully implemented, including a real capability test instead of a platform assumption. Directly informed by `../../skill-matching-hook/skill-gate-test/LOKAL-PROTOKOLL.md`: `fs.symlinkSync` is actually attempted and verified via `readlinkSync` (not just try/catch, because `ln -s` on Windows without Developer Mode silently creates an empty file instead of a symlink); NTFS junction is the automatic fallback. Every condition also gets a fresh, empty `$HOME`/`%USERPROFILE%` — necessary because `--setting-sources project` alone is demonstrably NOT enough to keep globally enabled plugin skills out (also confirmed in the local protocol). |
+| **C** (best effort) | Runs with no isolation guarantee at all, in the (copied) original working directory — deliberately the lowest trust tier, no extra code needed. |
 
-Jede Bedingung läuft zusätzlich in einer **frischen Arbeitskopie** (nicht im
-Original), damit die beiden Bedingungen garantiert keinen Dateizustand teilen
-— unabhängig von der Isolationsstufe.
+Every condition also runs in a **fresh working copy** (not the original), so
+the two conditions are guaranteed to never share file state — regardless of
+the isolation tier.
 
-## Was diese Phase bewusst NICHT liefert
+## What this phase deliberately does NOT deliver
 
-- Kein fertiges Docker-Image für Tier A (nur der Aufruf-Mechanismus).
-- Kein echter Backend-Endpoint (Phase 3) — nur ein lokaler, validierter Mock.
-- Kategorieerkennung und alle `category_metrics` (Komplexität, Lesbarkeit)
-  sind **heuristisch, nicht exakt** — siehe Kommentare in
-  `src/category/detectCategory.ts`, `src/metrics/complexity.ts` und
-  `src/metrics/readability.ts` für die jeweiligen Grenzen. Kein manuelles
-  Rating ersetzt das je (Briefing Punkt 3) — Ungenauigkeit wird über die
-  Kategorie-Heterogenitäts-Prüfung im Aggregat abgefangen (Plan Abschnitt 7),
-  nicht hier korrigiert.
+- No finished Docker image for Tier A (only the invocation mechanism).
+- No real backend endpoint (Phase 3) — only a local, validated mock.
+- Category detection and every `category_metrics` (complexity, readability)
+  are **heuristic, not exact** — see the comments in
+  `src/category/detectCategory.ts`, `src/metrics/complexity.ts`, and
+  `src/metrics/readability.ts` for their respective limits. No manual
+  rating ever replaces this (briefing point 3) — inaccuracy is caught in
+  aggregate via the category-heterogeneity check (plan section 7), not
+  corrected here.
 
 ## Tests
 
@@ -70,23 +73,22 @@ npm run typecheck
 npm test
 ```
 
-40 Tests (vitest) decken ab: Randomisierung, Kategorie-/Größenklassen-
-Erkennung, Lesbarkeit/Komplexität-Heuristiken, Security-Delta-Regeln,
-Link-Fähigkeitstest, `RunResult`-Aufbau **validiert gegen das echte
-Schema-Package**, Mock-Upload (inkl. Ablehnung ungültiger Payloads vor jedem
-Schreiben/Versand), und lokale Config-Persistenz. Reale `claude`-Aufrufe
-laufen über ein injizierbares `ProcessRunner`-Interface und sind in Tests
-durch Fakes ersetzt — ein echter End-to-End-Lauf wurde einmalig manuell
-gegen die lokale `claude`-Installation verifiziert (siehe Commit-Historie),
-ist aber kein Teil der automatisierten Testsuite (würde reale API-Kosten pro
-Testlauf verursachen).
+40 tests (vitest) cover: randomization, category/size-bucket detection,
+readability/complexity heuristics, security-delta rules, the link
+capability test, `RunResult` assembly **validated against the real schema
+package**, mock upload (including rejecting invalid payloads before any
+write/send), and local config persistence. Real `claude` calls go through
+an injectable `ProcessRunner` interface and are replaced by fakes in tests
+— a real end-to-end run was verified once manually against the local
+`claude` installation (see commit history), but isn't part of the
+automated test suite (would incur real API cost on every test run).
 
-## Offene Punkte für spätere Iterationen
+## Open items for later iterations
 
-- Docker-Image für Tier A bauen und pflegen.
-- Kategorieerkennung auf echten Daten kalibrieren, sobald erste Runs vorliegen.
-- Zyklomatische Komplexität durch echte AST-basierte Berechnung ersetzen
-  (z.B. `ts-morph` für TS/JS), sobald der Aufwand gerechtfertigt ist.
-- Cloud-Test 5d (frisches Home isoliert personal-level Skills) war bisher
-  nur in der Cloud-Sandbox verifiziert — sollte einmal gezielt lokal
-  nachgetestet werden (siehe `skill-matching-hook`-README, "Nächste Schritte").
+- Build and maintain a Docker image for Tier A.
+- Calibrate category detection on real data once the first runs come in.
+- Replace cyclomatic complexity with a real AST-based calculation (e.g.
+  `ts-morph` for TS/JS) once the effort is justified.
+- Cloud test 5d (fresh home isolates personal-level skills) was so far only
+  verified in the cloud sandbox — should be specifically re-tested locally
+  (see the `skill-matching-hook` README, "Next steps").

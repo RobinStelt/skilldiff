@@ -11,9 +11,9 @@ export interface ProcessRunner {
 }
 
 /**
- * Echte Prozessausführung. Als Interface gehalten, damit Orchestrierung und
- * Metrik-Erfassung in Tests gegen einen Fake-Runner laufen können, statt
- * echte `claude`-Sessions oder Build-Kommandos auszuführen.
+ * Real process execution. Kept as an interface so orchestration and metric
+ * collection can run against a fake runner in tests, instead of spawning
+ * real `claude` sessions or build commands.
  */
 export const realProcessRunner: ProcessRunner = {
   run(cmd, args, opts) {

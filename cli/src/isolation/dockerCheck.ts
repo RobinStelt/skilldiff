@@ -4,9 +4,9 @@ import { promisify } from "node:util";
 const execFileAsync = promisify(execFile);
 
 /**
- * Prüft tatsächlich (nicht geraten), ob Docker oder Podman lokal
- * funktionsfähig ist — `docker info`/`podman info` schlägt fehl, wenn der
- * Daemon nicht läuft, selbst wenn die Binary installiert ist.
+ * Actually checks (doesn't guess) whether Docker or Podman is functional
+ * locally — `docker info`/`podman info` fails if the daemon isn't running,
+ * even if the binary is installed.
  */
 export async function detectContainerRuntime(): Promise<"docker" | "podman" | null> {
   for (const bin of ["docker", "podman"] as const) {
@@ -14,7 +14,7 @@ export async function detectContainerRuntime(): Promise<"docker" | "podman" | nu
       await execFileAsync(bin, ["info"], { timeout: 5000 });
       return bin;
     } catch {
-      // Binary fehlt, Daemon läuft nicht, oder keine Berechtigung — nächste Option probieren.
+      // Binary missing, daemon not running, or no permission — try the next option.
     }
   }
   return null;

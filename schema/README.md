@@ -1,87 +1,87 @@
 # @marktplatz/schema
 
-Verbindliche Vertragsschicht zwischen CLI (Phase 2) und Backend (Phase 3) des
-Skill-A/B-Marktplatzes. Reines Schema-Package — **keine** Laufzeit-Abhängigkeit
-zu CLI- oder Backend-Code, damit beide es unabhängig voneinander importieren
-können.
+Binding contract layer between the CLI (Phase 2) and backend (Phase 3) of
+the Skill-A/B-Marketplace. A pure schema package — **no** runtime
+dependency on CLI or backend code, so both can import it independently.
 
-Voller Projekt-Kontext: `../skill-ab-marktplatz-plan.md`, Abschnitt 4
-(Datenschema) und Abschnitt 5 (Bewertungsdimensionen). Dieses README erklärt
-nur, wie man das Package benutzt — nicht warum das Schema so aussieht.
+Full project context: `../skill-ab-marktplatz-plan.md`, section 4 (data
+schema) and section 5 (evaluation dimensions) — written in German, the
+project's planning language. This README only explains how to use the
+package, not why the schema looks the way it does.
 
-## Single Source of Truth
+## Single source of truth
 
-`src/schema.ts` enthält das Zod-Schema, aus dem alles andere abgeleitet wird:
+`src/schema.ts` holds the Zod schema everything else is derived from:
 
-- **TypeScript-Typen** (`src/types.ts`) per `z.infer<>`
-- **JSON-Schema** (`run-result.schema.json`) per `npm run build:json-schema`
-  (nutzt `zod-to-json-schema`) — für die Laufzeitvalidierung im Backend, falls
-  dort keine Node/Zod-Laufzeit zur Verfügung steht
+- **TypeScript types** (`src/types.ts`) via `z.infer<>`
+- **JSON schema** (`run-result.schema.json`) via `npm run build:json-schema`
+  (uses `zod-to-json-schema`) — for backend runtime validation where no
+  Node/Zod runtime is available
 
-Ändere Feldregeln **nur** in `src/schema.ts`. Typen und JSON-Schema ziehen
-automatisch nach.
+Change field rules **only** in `src/schema.ts`. Types and JSON schema follow
+automatically.
 
-⚠️ **Grenze des JSON-Schema-Exports:** Die Cross-Field-Regel
-„`content_ref` nur gesetzt, wenn `content_opt_in === true`" ist als
-`.superRefine()` auf der Zod-Seite implementiert und lässt sich nicht verlustfrei
-nach JSON-Schema exportieren. Ein Backend, das ausschließlich das exportierte
-JSON-Schema nutzt (statt der Zod-Laufzeit direkt), muss diese eine Regel separat
-prüfen. Alle anderen Regeln (inkl. der `category`↔`security_delta`- und
-`category`↔`category_metrics`-Kopplung über die diskriminierte Union) sind im
-JSON-Schema vollständig abgebildet.
+⚠️ **Limitation of the JSON schema export:** the cross-field rule
+"`content_ref` only set when `content_opt_in === true`" is implemented as a
+`.superRefine()` on the Zod side and cannot be exported losslessly to JSON
+schema. A backend that relies exclusively on the exported JSON schema
+(instead of the Zod runtime directly) must check this one rule separately.
+Every other rule (including the `category`<->`security_delta` and
+`category`<->`category_metrics` coupling via the discriminated union) is
+fully represented in the JSON schema.
 
-## Nutzung in CLI/Backend
+## Usage in CLI/backend
 
 ```ts
 import { validateRunResult, type RunResult } from "@marktplatz/schema";
 
-const result = validateRunResult(unbekannteDaten);
+const result = validateRunResult(unknownData);
 if (Array.isArray(result)) {
-  // result: ValidationError[] — jeweils { path, message }
-  console.error("Ungültiger RunResult:", result);
+  // result: ValidationError[] — each { path, message }
+  console.error("Invalid RunResult:", result);
 } else {
-  // result: RunResult — vollständig typisiert, inkl. korrekt
-  // eingeengtem category_metrics je nach result.category
+  // result: RunResult — fully typed, including category_metrics
+  // correctly narrowed based on result.category
   submitToBackend(result);
 }
 ```
 
-Alle öffentlichen Exporte laufen über `src/index.ts` — nicht aus tieferen
-Pfaden (`src/schema.ts`, `src/validate.ts`, …) importieren, damit die interne
-Struktur frei änderbar bleibt.
+All public exports go through `src/index.ts` — never import from deeper
+paths (`src/schema.ts`, `src/validate.ts`, …), so the internal structure
+stays free to change.
 
-## Kernregeln, die die Validierung erzwingt
+## Core rules the validation enforces
 
-1. `category_metrics` ist strukturell an `category` gekoppelt (diskriminierte
-   Union): `debugging`/`feature` → `test_coverage_pct`, `lint_errors`,
+1. `category_metrics` is structurally coupled to `category` (discriminated
+   union): `debugging`/`feature` → `test_coverage_pct`, `lint_errors`,
    `ci_status`; `refactoring` → `cyclomatic_complexity_before/after`,
-   `diff_size_loc`; `doku` → `readability_score`; `marketing`/`sonstige` →
+   `diff_size_loc`; `docs` → `readability_score`; `marketing`/`other` →
    `null`.
-2. `security_delta` muss `null` sein außer bei `debugging`/`feature`/
-   `refactoring` (dort ist es optional — `null`, wenn kein Code-Artefakt
-   entstand).
-3. `content_ref` darf nur gesetzt sein, wenn `content_opt_in === true`.
-4. `isolation_tier` ist ausschließlich `"A"`, `"B"` oder `"C"`.
+2. `security_delta` must be `null` except for `debugging`/`feature`/
+   `refactoring` (there it's optional — `null` when no code artifact was
+   produced).
+3. `content_ref` may only be set when `content_opt_in === true`.
+4. `isolation_tier` is exclusively `"A"`, `"B"`, or `"C"`.
 
-Kein `RegressionCheck`-Typ — Regressions-Nachcheck ist bewusst kein Teil des
-Projekts (Plan, Abschnitt 4 & 8).
+No `RegressionCheck` type — a regression re-check is deliberately not part
+of this project (plan, sections 4 & 8).
 
 ## Fixtures
 
-`fixtures/valid/` — ein valider Run pro Kategorie.
-`fixtures/invalid/` — drei bewusst ungültige Beispiele (eine Verletzung pro
-Regel oben aus 2–4). Beide Verzeichnisse werden von `test/validate.test.ts`
-automatisch eingelesen; ein neuer Fixture wird ohne Codeänderung mitgetestet.
+`fixtures/valid/` — one valid run per category.
+`fixtures/invalid/` — three deliberately invalid examples (one violation per
+rule above from 2–4). Both directories are read automatically by
+`test/validate.test.ts`; a new fixture is picked up without any code change.
 
 ## Scripts
 
 ```bash
 npm run typecheck        # tsc --noEmit
 npm test                 # vitest run
-npm run build:json-schema  # schreibt run-result.schema.json
+npm run build:json-schema  # writes run-result.schema.json
 ```
 
-## Installation (lokal, solange kein eigenes npm-Package registriert ist)
+## Installation (local, until this is published as its own npm package)
 
 ```bash
 cd schema

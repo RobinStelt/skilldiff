@@ -6,7 +6,7 @@ import { detectLinkCapability } from "../src/isolation/linkCapability.js";
 import { applyTierBGate, assertSkillSourceOutsideWorkDir } from "../src/isolation/gating.js";
 
 describe("detectLinkCapability", () => {
-  it("liefert echte Booleans, ohne zu werfen (Umgebung wird tatsächlich getestet, nicht geraten)", () => {
+  it("returns real booleans without throwing (the environment is actually tested, not guessed)", () => {
     const cap = detectLinkCapability();
     expect(typeof cap.symlink).toBe("boolean");
     expect(typeof cap.junction).toBe("boolean");
@@ -14,14 +14,14 @@ describe("detectLinkCapability", () => {
 });
 
 describe("assertSkillSourceOutsideWorkDir", () => {
-  it("wirft, wenn die Quelle innerhalb des Arbeitsverzeichnisses liegt", () => {
+  it("throws when the source lies inside the working directory", () => {
     expect(() =>
-      assertSkillSourceOutsideWorkDir("C:\\projekt\\work", "C:\\projekt\\work\\skills-source\\alpha"),
+      assertSkillSourceOutsideWorkDir("C:\\project\\work", "C:\\project\\work\\skills-source\\alpha"),
     ).toThrow();
   });
 
-  it("wirft NICHT, wenn die Quelle außerhalb liegt", () => {
-    expect(() => assertSkillSourceOutsideWorkDir("C:\\projekt\\work", "C:\\anderswo\\alpha")).not.toThrow();
+  it("does NOT throw when the source lies outside", () => {
+    expect(() => assertSkillSourceOutsideWorkDir("C:\\project\\work", "C:\\elsewhere\\alpha")).not.toThrow();
   });
 });
 
@@ -34,12 +34,12 @@ describe("applyTierBGate", () => {
     rmSync(sourceDir, { recursive: true, force: true });
   });
 
-  it("verlinkt die Skill-Quelle bei mit_skill und entfernt sie bei ohne_skill", () => {
+  it("links the skill source for with_skill and removes it for without_skill", () => {
     const cap = detectLinkCapability();
     if (!cap.symlink && !cap.junction) {
-      // Auf dieser Testumgebung ist gar kein Link-Mechanismus verfügbar
-      // (sollte laut LOKAL-PROTOKOLL.md nicht vorkommen, aber kein Grund,
-      // den Test hart failen zu lassen statt ihn zu überspringen).
+      // No link mechanism at all is available in this test environment
+      // (shouldn't happen per LOKAL-PROTOKOLL.md, but no reason to hard-fail
+      // the test instead of skipping it).
       return;
     }
 
@@ -47,12 +47,12 @@ describe("applyTierBGate", () => {
     sourceDir = mkdtempSync(join(tmpdir(), "skill-ab-gate-source-"));
     writeFileSync(join(sourceDir, "SKILL.md"), "# Test");
 
-    applyTierBGate({ workDir, skillId: "skill-x", skillSourceDir: sourceDir, bedingung: "mit_skill", linkFaehigkeit: cap });
+    applyTierBGate({ workDir, skillId: "skill-x", skillSourceDir: sourceDir, condition: "with_skill", linkCapability: cap });
     const linkPath = join(workDir, ".claude", "skills", "skill-x");
     expect(existsSync(linkPath)).toBe(true);
     expect(readdirSync(linkPath)).toContain("SKILL.md");
 
-    applyTierBGate({ workDir, skillId: "skill-x", skillSourceDir: sourceDir, bedingung: "ohne_skill", linkFaehigkeit: cap });
+    applyTierBGate({ workDir, skillId: "skill-x", skillSourceDir: sourceDir, condition: "without_skill", linkCapability: cap });
     expect(existsSync(linkPath)).toBe(false);
   });
 });

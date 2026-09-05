@@ -8,16 +8,16 @@ import { createHash } from "node:crypto";
 const execAsync = promisify(exec);
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
-export async function ermittleClaudeVersion(claudeBin: string): Promise<string> {
+export async function getClaudeVersion(claudeBin: string): Promise<string> {
   try {
     const { stdout } = await execAsync(`"${claudeBin}" --version`);
     return stdout.trim();
   } catch {
-    return "unbekannt";
+    return "unknown";
   }
 }
 
-export function ermittleCliVersion(): string {
+export function getCliVersion(): string {
   try {
     const pkg = JSON.parse(readFileSync(join(__dirname, "..", "package.json"), "utf-8")) as { version?: string };
     return pkg.version ?? "0.0.0";
@@ -27,18 +27,17 @@ export function ermittleCliVersion(): string {
 }
 
 /**
- * Build-Hash zum Abgleich gegen Client-Manipulation (Plan Abschnitt 7,
- * Restrisiko "Client-Manipulation"). Bevorzugt der Git-Commit-Hash dieses
- * CLI-Checkouts; fällt auf einen Hash des installierten package.json
- * zurück, wenn kein Git-Repo vorhanden ist (z.B. bei npm-Installation ohne
- * .git-Ordner).
+ * Build hash used to detect client tampering (plan section 7, residual
+ * risk "client manipulation"). Prefers the Git commit hash of this CLI
+ * checkout; falls back to a hash of the installed package.json when no Git
+ * repo is present (e.g. an npm install without a .git folder).
  */
-export async function ermittleCliBuildHash(): Promise<string> {
+export async function getCliBuildHash(): Promise<string> {
   try {
     const { stdout } = await execAsync("git rev-parse HEAD", { cwd: __dirname });
     return stdout.trim();
   } catch {
-    const pkgInhalt = readFileSync(join(__dirname, "..", "package.json"), "utf-8");
-    return createHash("sha256").update(pkgInhalt).digest("hex").slice(0, 12);
+    const pkgContent = readFileSync(join(__dirname, "..", "package.json"), "utf-8");
+    return createHash("sha256").update(pkgContent).digest("hex").slice(0, 12);
   }
 }

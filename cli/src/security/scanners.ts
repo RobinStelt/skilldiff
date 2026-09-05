@@ -3,17 +3,17 @@ import { promisify } from "node:util";
 import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import type { SeverityCounts } from "@marktplatz/schema";
-import { leereSeverityCounts } from "./severityCounts.js";
+import { emptySeverityCounts } from "./severityCounts.js";
 
 const execAsync = promisify(exec);
 
 /**
- * Führt einen Scanner aus und liefert dessen stdout — auch wenn der Prozess
- * mit Exit-Code != 0 endet, weil er Findings gemeldet hat (üblich bei
- * Semgrep/Bandit/npm audit). Nur bei "Kommando nicht gefunden" o.ä. wird
- * `null` zurückgegeben (Scanner schlicht nicht verfügbar — kein Fehlerfall).
+ * Runs a scanner and returns its stdout — even if the process exits with a
+ * non-zero code because it reported findings (common for
+ * Semgrep/Bandit/npm audit). `null` is only returned for "command not
+ * found" and similar (scanner simply unavailable — not an error case).
  */
-async function stdoutOderNull(command: string, cwd: string): Promise<string | null> {
+async function stdoutOrNull(command: string, cwd: string): Promise<string | null> {
   try {
     const { stdout } = await execAsync(command, { cwd, maxBuffer: 20 * 1024 * 1024 });
     return stdout;
@@ -30,27 +30,27 @@ interface SemgrepResult {
   results?: Array<{ extra?: { severity?: string } }>;
 }
 
-export async function scanMitSemgrep(dir: string): Promise<SeverityCounts> {
-  const stdout = await stdoutOderNull("semgrep --config auto --json --quiet", dir);
-  const counts = leereSeverityCounts();
+export async function scanWithSemgrep(dir: string): Promise<SeverityCounts> {
+  const stdout = await stdoutOrNull("semgrep --config auto --json --quiet", dir);
+  const counts = emptySeverityCounts();
   if (!stdout) return counts;
   try {
     const parsed = JSON.parse(stdout) as SemgrepResult;
     for (const result of parsed.results ?? []) {
       switch ((result.extra?.severity ?? "").toUpperCase()) {
         case "ERROR":
-          counts.hoch += 1;
+          counts.high += 1;
           break;
         case "WARNING":
-          counts.mittel += 1;
+          counts.medium += 1;
           break;
         case "INFO":
-          counts.niedrig += 1;
+          counts.low += 1;
           break;
       }
     }
   } catch {
-    // Unparsebare Ausgabe (z.B. Semgrep-Versionswechsel) — lieber 0 melden als raten.
+    // Unparseable output (e.g. a Semgrep version change) — better report 0 than guess.
   }
   return counts;
 }
@@ -59,20 +59,20 @@ interface NpmAuditResult {
   metadata?: { vulnerabilities?: { info?: number; low?: number; moderate?: number; high?: number; critical?: number } };
 }
 
-export async function scanMitNpmAudit(dir: string): Promise<SeverityCounts> {
-  const counts = leereSeverityCounts();
+export async function scanWithNpmAudit(dir: string): Promise<SeverityCounts> {
+  const counts = emptySeverityCounts();
   if (!existsSync(join(dir, "package.json"))) return counts;
-  const stdout = await stdoutOderNull("npm audit --json", dir);
+  const stdout = await stdoutOrNull("npm audit --json", dir);
   if (!stdout) return counts;
   try {
     const parsed = JSON.parse(stdout) as NpmAuditResult;
     const v = parsed.metadata?.vulnerabilities ?? {};
-    counts.kritisch = v.critical ?? 0;
-    counts.hoch = v.high ?? 0;
-    counts.mittel = v.moderate ?? 0;
-    counts.niedrig = (v.low ?? 0) + (v.info ?? 0);
+    counts.critical = v.critical ?? 0;
+    counts.high = v.high ?? 0;
+    counts.medium = v.moderate ?? 0;
+    counts.low = (v.low ?? 0) + (v.info ?? 0);
   } catch {
-    // s.o.
+    // see above
   }
   return counts;
 }
@@ -81,7 +81,7 @@ interface BanditResult {
   results?: Array<{ issue_severity?: string }>;
 }
 
-function hatPythonDateien(dir: string): boolean {
+function hasPythonFiles(dir: string): boolean {
   try {
     return readdirSync(dir, { recursive: true }).some((f) => typeof f === "string" && f.endsWith(".py"));
   } catch {
@@ -89,28 +89,28 @@ function hatPythonDateien(dir: string): boolean {
   }
 }
 
-export async function scanMitBandit(dir: string): Promise<SeverityCounts> {
-  const counts = leereSeverityCounts();
-  if (!hatPythonDateien(dir)) return counts;
-  const stdout = await stdoutOderNull(`bandit -r . -f json`, dir);
+export async function scanWithBandit(dir: string): Promise<SeverityCounts> {
+  const counts = emptySeverityCounts();
+  if (!hasPythonFiles(dir)) return counts;
+  const stdout = await stdoutOrNull(`bandit -r . -f json`, dir);
   if (!stdout) return counts;
   try {
     const parsed = JSON.parse(stdout) as BanditResult;
     for (const result of parsed.results ?? []) {
       switch ((result.issue_severity ?? "").toUpperCase()) {
         case "HIGH":
-          counts.hoch += 1;
+          counts.high += 1;
           break;
         case "MEDIUM":
-          counts.mittel += 1;
+          counts.medium += 1;
           break;
         case "LOW":
-          counts.niedrig += 1;
+          counts.low += 1;
           break;
       }
     }
   } catch {
-    // s.o.
+    // see above
   }
   return counts;
 }
