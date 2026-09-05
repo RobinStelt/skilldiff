@@ -5,7 +5,7 @@
   "description": "Ingestion, storage, aggregation, reputation weighting, anomaly flagging and public export API for the Skill-A/B-Marketplace (Phase 3, briefing 04-marktplatz-phase3-backend.md).",
   "type": "module",
   "scripts": {
-    "build": "tsc -p tsconfig.json",
+    "build": "tsc -p tsconfig.build.json",
     "dev": "tsx watch src/server.ts",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit",
@@ -14,6 +14,7 @@
     "migrate": "tsx scripts/migrate.ts"
   },
   "dependencies": {
+    "@fastify/cookie": "^9.4.0",
     "@fastify/cors": "^9.0.1",
     "@marktplatz/schema": "file:../schema",
     "fastify": "^4.28.1",
