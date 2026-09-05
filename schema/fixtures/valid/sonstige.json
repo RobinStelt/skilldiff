@@ -1,0 +1,20 @@
+{
+  "skill_id": "skill_persona_helper",
+  "account_id": "acct_00cc11",
+  "signature": "aa11...bb22",
+  "category": "sonstige",
+  "size_bucket": "mittel",
+  "isolation_tier": "C",
+  "mit_skill": { "erfolg": null, "tokens": 5400, "dauer_sek": 47 },
+  "ohne_skill": { "erfolg": null, "tokens": 5100, "dauer_sek": 44 },
+  "security_delta": null,
+  "category_metrics": null,
+  "content_opt_in": false,
+  "content_ref": null,
+  "run_id": "run_0006",
+  "reihenfolge_randomisiert": true,
+  "timestamp": "2026-09-03T11:11:11Z",
+  "claude_version": "claude-sonnet-5",
+  "cli_version": "0.1.0",
+  "cli_build_hash": "b1f3c9d"
+}

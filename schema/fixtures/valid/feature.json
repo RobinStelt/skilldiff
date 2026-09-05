@@ -1,0 +1,23 @@
+{
+  "skill_id": "skill_api_scaffolder",
+  "account_id": "acct_5b7d21",
+  "signature": "e21a...44f0",
+  "category": "feature",
+  "size_bucket": "groß",
+  "isolation_tier": "B",
+  "mit_skill": { "erfolg": true, "tokens": 41230, "dauer_sek": 512 },
+  "ohne_skill": { "erfolg": true, "tokens": 53880, "dauer_sek": 690 },
+  "security_delta": null,
+  "category_metrics": {
+    "mit_skill": { "test_coverage_pct": 92.0, "lint_errors": 1, "ci_status": "pass" },
+    "ohne_skill": { "test_coverage_pct": 88.4, "lint_errors": 2, "ci_status": "pass" }
+  },
+  "content_opt_in": true,
+  "content_ref": "content_ref_00042",
+  "run_id": "run_0002",
+  "reihenfolge_randomisiert": false,
+  "timestamp": "2026-08-30T10:05:33Z",
+  "claude_version": "claude-sonnet-5",
+  "cli_version": "0.1.0",
+  "cli_build_hash": "b1f3c9d"
+}

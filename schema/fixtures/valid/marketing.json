@@ -1,0 +1,20 @@
+{
+  "skill_id": "skill_copywriter_pro",
+  "account_id": "acct_77e2f9",
+  "signature": "1234...5678",
+  "category": "marketing",
+  "size_bucket": "klein",
+  "isolation_tier": "B",
+  "mit_skill": { "erfolg": null, "tokens": 3120, "dauer_sek": 28 },
+  "ohne_skill": { "erfolg": null, "tokens": 3980, "dauer_sek": 35 },
+  "security_delta": null,
+  "category_metrics": null,
+  "content_opt_in": true,
+  "content_ref": "content_ref_00133",
+  "run_id": "run_0005",
+  "reihenfolge_randomisiert": false,
+  "timestamp": "2026-09-02T16:45:09Z",
+  "claude_version": "claude-sonnet-5",
+  "cli_version": "0.1.0",
+  "cli_build_hash": "b1f3c9d"
+}

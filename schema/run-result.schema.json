@@ -1,0 +1,1330 @@
+{
+  "$ref": "#/definitions/RunResult",
+  "definitions": {
+    "RunResult": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "skill_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "account_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "signature": {
+              "type": "string",
+              "minLength": 1
+            },
+            "size_bucket": {
+              "type": "string",
+              "enum": [
+                "klein",
+                "mittel",
+                "groß"
+              ]
+            },
+            "isolation_tier": {
+              "type": "string",
+              "enum": [
+                "A",
+                "B",
+                "C"
+              ]
+            },
+            "mit_skill": {
+              "type": "object",
+              "properties": {
+                "erfolg": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "tokens": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "dauer_sek": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "erfolg",
+                "tokens",
+                "dauer_sek"
+              ],
+              "additionalProperties": false
+            },
+            "ohne_skill": {
+              "type": "object",
+              "properties": {
+                "erfolg": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "tokens": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "dauer_sek": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "erfolg",
+                "tokens",
+                "dauer_sek"
+              ],
+              "additionalProperties": false
+            },
+            "content_opt_in": {
+              "type": "boolean"
+            },
+            "content_ref": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "run_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "reihenfolge_randomisiert": {
+              "type": "boolean"
+            },
+            "timestamp": {
+              "type": "string"
+            },
+            "claude_version": {
+              "type": "string",
+              "minLength": 1
+            },
+            "cli_version": {
+              "type": "string",
+              "minLength": 1
+            },
+            "cli_build_hash": {
+              "type": "string",
+              "minLength": 1
+            },
+            "category": {
+              "type": "string",
+              "const": "debugging"
+            },
+            "security_delta": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "mit_skill": {
+                      "type": "object",
+                      "properties": {
+                        "kritisch": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "hoch": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "mittel": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "niedrig": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      },
+                      "required": [
+                        "kritisch",
+                        "hoch",
+                        "mittel",
+                        "niedrig"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "ohne_skill": {
+                      "type": "object",
+                      "properties": {
+                        "kritisch": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "hoch": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "mittel": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "niedrig": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      },
+                      "required": [
+                        "kritisch",
+                        "hoch",
+                        "mittel",
+                        "niedrig"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "mit_skill",
+                    "ohne_skill"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "category_metrics": {
+              "type": "object",
+              "properties": {
+                "mit_skill": {
+                  "type": "object",
+                  "properties": {
+                    "test_coverage_pct": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 100
+                    },
+                    "lint_errors": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "ci_status": {
+                      "type": "string",
+                      "enum": [
+                        "pass",
+                        "fail",
+                        "n/a"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "test_coverage_pct",
+                    "lint_errors",
+                    "ci_status"
+                  ],
+                  "additionalProperties": false
+                },
+                "ohne_skill": {
+                  "type": "object",
+                  "properties": {
+                    "test_coverage_pct": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 100
+                    },
+                    "lint_errors": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "ci_status": {
+                      "type": "string",
+                      "enum": [
+                        "pass",
+                        "fail",
+                        "n/a"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "test_coverage_pct",
+                    "lint_errors",
+                    "ci_status"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "mit_skill",
+                "ohne_skill"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "skill_id",
+            "account_id",
+            "signature",
+            "size_bucket",
+            "isolation_tier",
+            "mit_skill",
+            "ohne_skill",
+            "content_opt_in",
+            "content_ref",
+            "run_id",
+            "reihenfolge_randomisiert",
+            "timestamp",
+            "claude_version",
+            "cli_version",
+            "cli_build_hash",
+            "category",
+            "security_delta",
+            "category_metrics"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "skill_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "account_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "signature": {
+              "type": "string",
+              "minLength": 1
+            },
+            "size_bucket": {
+              "type": "string",
+              "enum": [
+                "klein",
+                "mittel",
+                "groß"
+              ]
+            },
+            "isolation_tier": {
+              "type": "string",
+              "enum": [
+                "A",
+                "B",
+                "C"
+              ]
+            },
+            "mit_skill": {
+              "type": "object",
+              "properties": {
+                "erfolg": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "tokens": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "dauer_sek": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "erfolg",
+                "tokens",
+                "dauer_sek"
+              ],
+              "additionalProperties": false
+            },
+            "ohne_skill": {
+              "type": "object",
+              "properties": {
+                "erfolg": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "tokens": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "dauer_sek": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "erfolg",
+                "tokens",
+                "dauer_sek"
+              ],
+              "additionalProperties": false
+            },
+            "content_opt_in": {
+              "type": "boolean"
+            },
+            "content_ref": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "run_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "reihenfolge_randomisiert": {
+              "type": "boolean"
+            },
+            "timestamp": {
+              "type": "string"
+            },
+            "claude_version": {
+              "type": "string",
+              "minLength": 1
+            },
+            "cli_version": {
+              "type": "string",
+              "minLength": 1
+            },
+            "cli_build_hash": {
+              "type": "string",
+              "minLength": 1
+            },
+            "category": {
+              "type": "string",
+              "const": "feature"
+            },
+            "security_delta": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "mit_skill": {
+                      "type": "object",
+                      "properties": {
+                        "kritisch": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "hoch": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "mittel": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "niedrig": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      },
+                      "required": [
+                        "kritisch",
+                        "hoch",
+                        "mittel",
+                        "niedrig"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "ohne_skill": {
+                      "type": "object",
+                      "properties": {
+                        "kritisch": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "hoch": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "mittel": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "niedrig": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      },
+                      "required": [
+                        "kritisch",
+                        "hoch",
+                        "mittel",
+                        "niedrig"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "mit_skill",
+                    "ohne_skill"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "category_metrics": {
+              "type": "object",
+              "properties": {
+                "mit_skill": {
+                  "type": "object",
+                  "properties": {
+                    "test_coverage_pct": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 100
+                    },
+                    "lint_errors": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "ci_status": {
+                      "type": "string",
+                      "enum": [
+                        "pass",
+                        "fail",
+                        "n/a"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "test_coverage_pct",
+                    "lint_errors",
+                    "ci_status"
+                  ],
+                  "additionalProperties": false
+                },
+                "ohne_skill": {
+                  "type": "object",
+                  "properties": {
+                    "test_coverage_pct": {
+                      "type": "number",
+                      "minimum": 0,
+                      "maximum": 100
+                    },
+                    "lint_errors": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "ci_status": {
+                      "type": "string",
+                      "enum": [
+                        "pass",
+                        "fail",
+                        "n/a"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "test_coverage_pct",
+                    "lint_errors",
+                    "ci_status"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "mit_skill",
+                "ohne_skill"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "skill_id",
+            "account_id",
+            "signature",
+            "size_bucket",
+            "isolation_tier",
+            "mit_skill",
+            "ohne_skill",
+            "content_opt_in",
+            "content_ref",
+            "run_id",
+            "reihenfolge_randomisiert",
+            "timestamp",
+            "claude_version",
+            "cli_version",
+            "cli_build_hash",
+            "category",
+            "security_delta",
+            "category_metrics"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "skill_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "account_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "signature": {
+              "type": "string",
+              "minLength": 1
+            },
+            "size_bucket": {
+              "type": "string",
+              "enum": [
+                "klein",
+                "mittel",
+                "groß"
+              ]
+            },
+            "isolation_tier": {
+              "type": "string",
+              "enum": [
+                "A",
+                "B",
+                "C"
+              ]
+            },
+            "mit_skill": {
+              "type": "object",
+              "properties": {
+                "erfolg": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "tokens": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "dauer_sek": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "erfolg",
+                "tokens",
+                "dauer_sek"
+              ],
+              "additionalProperties": false
+            },
+            "ohne_skill": {
+              "type": "object",
+              "properties": {
+                "erfolg": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "tokens": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "dauer_sek": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "erfolg",
+                "tokens",
+                "dauer_sek"
+              ],
+              "additionalProperties": false
+            },
+            "content_opt_in": {
+              "type": "boolean"
+            },
+            "content_ref": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "run_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "reihenfolge_randomisiert": {
+              "type": "boolean"
+            },
+            "timestamp": {
+              "type": "string"
+            },
+            "claude_version": {
+              "type": "string",
+              "minLength": 1
+            },
+            "cli_version": {
+              "type": "string",
+              "minLength": 1
+            },
+            "cli_build_hash": {
+              "type": "string",
+              "minLength": 1
+            },
+            "category": {
+              "type": "string",
+              "const": "refactoring"
+            },
+            "security_delta": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "mit_skill": {
+                      "type": "object",
+                      "properties": {
+                        "kritisch": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "hoch": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "mittel": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "niedrig": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      },
+                      "required": [
+                        "kritisch",
+                        "hoch",
+                        "mittel",
+                        "niedrig"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "ohne_skill": {
+                      "type": "object",
+                      "properties": {
+                        "kritisch": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "hoch": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "mittel": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "niedrig": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      },
+                      "required": [
+                        "kritisch",
+                        "hoch",
+                        "mittel",
+                        "niedrig"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "mit_skill",
+                    "ohne_skill"
+                  ],
+                  "additionalProperties": false
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "category_metrics": {
+              "type": "object",
+              "properties": {
+                "mit_skill": {
+                  "type": "object",
+                  "properties": {
+                    "cyclomatic_complexity_before": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "cyclomatic_complexity_after": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "diff_size_loc": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "required": [
+                    "cyclomatic_complexity_before",
+                    "cyclomatic_complexity_after",
+                    "diff_size_loc"
+                  ],
+                  "additionalProperties": false
+                },
+                "ohne_skill": {
+                  "type": "object",
+                  "properties": {
+                    "cyclomatic_complexity_before": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "cyclomatic_complexity_after": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "diff_size_loc": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  },
+                  "required": [
+                    "cyclomatic_complexity_before",
+                    "cyclomatic_complexity_after",
+                    "diff_size_loc"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "mit_skill",
+                "ohne_skill"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "skill_id",
+            "account_id",
+            "signature",
+            "size_bucket",
+            "isolation_tier",
+            "mit_skill",
+            "ohne_skill",
+            "content_opt_in",
+            "content_ref",
+            "run_id",
+            "reihenfolge_randomisiert",
+            "timestamp",
+            "claude_version",
+            "cli_version",
+            "cli_build_hash",
+            "category",
+            "security_delta",
+            "category_metrics"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "skill_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "account_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "signature": {
+              "type": "string",
+              "minLength": 1
+            },
+            "size_bucket": {
+              "type": "string",
+              "enum": [
+                "klein",
+                "mittel",
+                "groß"
+              ]
+            },
+            "isolation_tier": {
+              "type": "string",
+              "enum": [
+                "A",
+                "B",
+                "C"
+              ]
+            },
+            "mit_skill": {
+              "type": "object",
+              "properties": {
+                "erfolg": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "tokens": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "dauer_sek": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "erfolg",
+                "tokens",
+                "dauer_sek"
+              ],
+              "additionalProperties": false
+            },
+            "ohne_skill": {
+              "type": "object",
+              "properties": {
+                "erfolg": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "tokens": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "dauer_sek": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "erfolg",
+                "tokens",
+                "dauer_sek"
+              ],
+              "additionalProperties": false
+            },
+            "content_opt_in": {
+              "type": "boolean"
+            },
+            "content_ref": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "run_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "reihenfolge_randomisiert": {
+              "type": "boolean"
+            },
+            "timestamp": {
+              "type": "string"
+            },
+            "claude_version": {
+              "type": "string",
+              "minLength": 1
+            },
+            "cli_version": {
+              "type": "string",
+              "minLength": 1
+            },
+            "cli_build_hash": {
+              "type": "string",
+              "minLength": 1
+            },
+            "category": {
+              "type": "string",
+              "const": "doku"
+            },
+            "security_delta": {
+              "type": "null"
+            },
+            "category_metrics": {
+              "type": "object",
+              "properties": {
+                "mit_skill": {
+                  "type": "object",
+                  "properties": {
+                    "readability_score": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "readability_score"
+                  ],
+                  "additionalProperties": false
+                },
+                "ohne_skill": {
+                  "type": "object",
+                  "properties": {
+                    "readability_score": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "readability_score"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "required": [
+                "mit_skill",
+                "ohne_skill"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "skill_id",
+            "account_id",
+            "signature",
+            "size_bucket",
+            "isolation_tier",
+            "mit_skill",
+            "ohne_skill",
+            "content_opt_in",
+            "content_ref",
+            "run_id",
+            "reihenfolge_randomisiert",
+            "timestamp",
+            "claude_version",
+            "cli_version",
+            "cli_build_hash",
+            "category",
+            "security_delta",
+            "category_metrics"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "skill_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "account_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "signature": {
+              "type": "string",
+              "minLength": 1
+            },
+            "size_bucket": {
+              "type": "string",
+              "enum": [
+                "klein",
+                "mittel",
+                "groß"
+              ]
+            },
+            "isolation_tier": {
+              "type": "string",
+              "enum": [
+                "A",
+                "B",
+                "C"
+              ]
+            },
+            "mit_skill": {
+              "type": "object",
+              "properties": {
+                "erfolg": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "tokens": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "dauer_sek": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "erfolg",
+                "tokens",
+                "dauer_sek"
+              ],
+              "additionalProperties": false
+            },
+            "ohne_skill": {
+              "type": "object",
+              "properties": {
+                "erfolg": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "tokens": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "dauer_sek": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "erfolg",
+                "tokens",
+                "dauer_sek"
+              ],
+              "additionalProperties": false
+            },
+            "content_opt_in": {
+              "type": "boolean"
+            },
+            "content_ref": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "run_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "reihenfolge_randomisiert": {
+              "type": "boolean"
+            },
+            "timestamp": {
+              "type": "string"
+            },
+            "claude_version": {
+              "type": "string",
+              "minLength": 1
+            },
+            "cli_version": {
+              "type": "string",
+              "minLength": 1
+            },
+            "cli_build_hash": {
+              "type": "string",
+              "minLength": 1
+            },
+            "category": {
+              "type": "string",
+              "const": "marketing"
+            },
+            "security_delta": {
+              "type": "null"
+            },
+            "category_metrics": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "skill_id",
+            "account_id",
+            "signature",
+            "size_bucket",
+            "isolation_tier",
+            "mit_skill",
+            "ohne_skill",
+            "content_opt_in",
+            "content_ref",
+            "run_id",
+            "reihenfolge_randomisiert",
+            "timestamp",
+            "claude_version",
+            "cli_version",
+            "cli_build_hash",
+            "category",
+            "security_delta",
+            "category_metrics"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "skill_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "account_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "signature": {
+              "type": "string",
+              "minLength": 1
+            },
+            "size_bucket": {
+              "type": "string",
+              "enum": [
+                "klein",
+                "mittel",
+                "groß"
+              ]
+            },
+            "isolation_tier": {
+              "type": "string",
+              "enum": [
+                "A",
+                "B",
+                "C"
+              ]
+            },
+            "mit_skill": {
+              "type": "object",
+              "properties": {
+                "erfolg": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "tokens": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "dauer_sek": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "erfolg",
+                "tokens",
+                "dauer_sek"
+              ],
+              "additionalProperties": false
+            },
+            "ohne_skill": {
+              "type": "object",
+              "properties": {
+                "erfolg": {
+                  "type": [
+                    "boolean",
+                    "null"
+                  ]
+                },
+                "tokens": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "dauer_sek": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "erfolg",
+                "tokens",
+                "dauer_sek"
+              ],
+              "additionalProperties": false
+            },
+            "content_opt_in": {
+              "type": "boolean"
+            },
+            "content_ref": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "run_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "reihenfolge_randomisiert": {
+              "type": "boolean"
+            },
+            "timestamp": {
+              "type": "string"
+            },
+            "claude_version": {
+              "type": "string",
+              "minLength": 1
+            },
+            "cli_version": {
+              "type": "string",
+              "minLength": 1
+            },
+            "cli_build_hash": {
+              "type": "string",
+              "minLength": 1
+            },
+            "category": {
+              "type": "string",
+              "const": "sonstige"
+            },
+            "security_delta": {
+              "type": "null"
+            },
+            "category_metrics": {
+              "type": "null"
+            }
+          },
+          "required": [
+            "skill_id",
+            "account_id",
+            "signature",
+            "size_bucket",
+            "isolation_tier",
+            "mit_skill",
+            "ohne_skill",
+            "content_opt_in",
+            "content_ref",
+            "run_id",
+            "reihenfolge_randomisiert",
+            "timestamp",
+            "claude_version",
+            "cli_version",
+            "cli_build_hash",
+            "category",
+            "security_delta",
+            "category_metrics"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    }
+  },
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}
