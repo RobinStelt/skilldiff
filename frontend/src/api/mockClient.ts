@@ -13,6 +13,7 @@ export function createMockApiClient(skills: SkillDetail[]): MarketplaceApiClient
     async listSkills({ category }) {
       const summaries: SkillSummary[] = skills.map((skill) => ({
         skillId: skill.skillId,
+        metadata: skill.metadata,
         categories: skill.categories
           .filter((c) => !category || c.category === category)
           .map((c) => ({ category: c.category, sampleSize: c.sampleSize })),

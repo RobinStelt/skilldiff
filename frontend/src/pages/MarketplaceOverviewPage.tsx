@@ -56,7 +56,14 @@ export function MarketplaceOverviewPage({ apiClient }: { apiClient: MarketplaceA
         {skills?.map((skill) => (
           <li key={skill.skillId} className="skill-list__item">
             <Link to={`/skills/${encodeURIComponent(skill.skillId)}`} className="skill-list__link">
-              <span className="skill-list__id">{skill.skillId}</span>
+              <span className="skill-list__id">
+                {skill.metadata?.name ?? skill.skillId}
+                {skill.metadata?.githubStars != null && (
+                  <span className="skill-metadata__stars"> ★ {skill.metadata.githubStars.toLocaleString()}</span>
+                )}
+              </span>
+              {/* Technical skill_id stays visible even once a friendly name exists — it's still the identifier the URL, CLI, and export data use. */}
+              {skill.metadata?.name && <span className="skill-list__technical-id">{skill.skillId}</span>}
               <span className="skill-list__categories">
                 {skill.categories.map((c) => (
                   <span key={c.category} className="skill-list__category-chip">

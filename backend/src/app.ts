@@ -8,6 +8,10 @@ import { ingestRunResult } from "./ingestion/ingestRunResult.js";
 import type { SkillCategoryMetrics } from "./aggregation/metrics.js";
 import { toCsv } from "./api/export.js";
 import { exportUrlFor, type RawExportRecord, type SkillDetailResponse, type SkillListResponse } from "./api/publicApi.js";
+import { registerAdminRoutes } from "./api/adminRoutes.js";
+import type { AdminUserStore } from "./admin/adminUserStore.js";
+import type { AdminSessionStore } from "./admin/sessions.js";
+import type { SkillMetadataStore } from "./admin/skillMetadataStore.js";
 
 export interface AppDeps {
   accountStore: AccountStore;
@@ -23,6 +27,10 @@ export interface AppDeps {
   /** Backs GET /api/skills/:skillId/export?category= — raw, non-plaintext records behind one aggregate (briefing point 6). */
   getRawExportRecords: (skillId: string, category: Category) => Promise<RawExportRecord[]>;
   now?: () => Date;
+  /** Admin login + skill catalog CRUD (/api/admin/*, not part of any briefing — see db/migrations/003). */
+  adminUserStore: AdminUserStore;
+  sessionStore: AdminSessionStore;
+  skillMetadataStore: SkillMetadataStore;
 }
 
 const VALID_CATEGORIES: readonly Category[] = ["debugging", "feature", "refactoring", "docs", "marketing", "other"];
@@ -135,6 +143,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
       return {
         skillId: detail.skillId,
         aggregationSourceUrl: detail.aggregationSourceUrl,
+        metadata: detail.metadata,
         categories: detail.categories.map((c) => ({
           category: c.category,
           sampleSize: c.sampleSize,
@@ -160,6 +169,12 @@ export function buildApp(deps: AppDeps): FastifyInstance {
       const records = await deps.getRawExportRecords(skillId, category);
       return { skillId, category, records };
     });
+  });
+
+  registerAdminRoutes(app, {
+    adminUserStore: deps.adminUserStore,
+    sessionStore: deps.sessionStore,
+    skillMetadataStore: deps.skillMetadataStore,
   });
 
   return app;

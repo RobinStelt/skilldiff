@@ -44,11 +44,30 @@ export interface SkillCategoryDetail {
   exportUrl: string;
 }
 
+/**
+ * Catalog metadata an admin can attach to a skill_id (backend/src/admin/
+ * skillMetadataStore.ts) — purely descriptive/display, never fed into
+ * aggregation. `null` for a skill that has real run data but was never
+ * catalogued yet; the marketplace still shows its measured deltas either
+ * way, just without this card.
+ */
+export interface SkillMetadata {
+  name: string;
+  description: string | null;
+  githubUrl: string | null;
+  license: string | null;
+  maintainer: string | null;
+  /** Browse/catalog category — intentionally separate from a run's auto-detected `category` above, which drives aggregation and is never admin-editable. */
+  declaredCategory: string | null;
+  githubStars: number | null;
+}
+
 export interface SkillDetail {
   skillId: string;
   categories: SkillCategoryDetail[];
   /** Link to the open-source aggregation logic itself (briefing point 6) — not just an internal claim. */
   aggregationSourceUrl: string;
+  metadata: SkillMetadata | null;
 }
 
 export interface SkillSummaryCategory {
@@ -59,6 +78,7 @@ export interface SkillSummaryCategory {
 export interface SkillSummary {
   skillId: string;
   categories: SkillSummaryCategory[];
+  metadata: SkillMetadata | null;
 }
 
 export interface SkillListResponse {

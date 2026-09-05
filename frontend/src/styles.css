@@ -277,3 +277,107 @@ h1 {
 .isolation-bar__swatch--C {
   background: var(--tier-c);
 }
+
+/* --- Skill metadata card --------------------------------------------------- */
+
+.skill-metadata {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.skill-metadata--uncatalogued {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.skill-metadata__name {
+  font-weight: 700;
+  font-size: 1.05rem;
+  margin: 0 0 0.3rem;
+}
+
+.skill-metadata__description {
+  margin: 0 0 0.6rem;
+  color: var(--text-muted);
+}
+
+.skill-metadata__facts {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  font-size: 0.9rem;
+}
+
+.skill-metadata__label {
+  color: var(--text-muted);
+}
+
+.skill-metadata__stars {
+  color: var(--text-muted);
+}
+
+/* --- Admin ----------------------------------------------------------------- */
+
+.admin-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 480px;
+}
+
+.admin-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.9rem;
+}
+
+.admin-form input,
+.admin-form textarea {
+  font: inherit;
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 0.35rem;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.admin-form button {
+  font: inherit;
+  padding: 0.55rem 1rem;
+  border: none;
+  border-radius: 0.35rem;
+  background: var(--accent);
+  color: white;
+  cursor: pointer;
+  align-self: flex-start;
+}
+
+.admin-form button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.admin-skill-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.admin-skill-list li {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.skill-list__technical-id {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-family: ui-monospace, monospace;
+}

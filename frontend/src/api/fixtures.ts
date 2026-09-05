@@ -10,6 +10,15 @@ export const fixtureSkills: SkillDetail[] = [
   {
     skillId: "skill_bugfinder_v2",
     aggregationSourceUrl: "https://github.com/example-org/marktplatz/tree/main/backend/src/aggregation",
+    metadata: {
+      name: "Bugfinder v2",
+      description: "Traces a bug report to its root cause across the whole call graph before proposing a fix.",
+      githubUrl: "https://github.com/example-org/bugfinder",
+      license: "MIT",
+      maintainer: "example-org",
+      declaredCategory: "debugging",
+      githubStars: 1240,
+    },
     categories: [
       {
         category: "debugging",
@@ -41,6 +50,8 @@ export const fixtureSkills: SkillDetail[] = [
   {
     skillId: "skill_doc_writer",
     aggregationSourceUrl: "https://github.com/example-org/marktplatz/tree/main/backend/src/aggregation",
+    // Deliberately uncatalogued — exercises the "no admin metadata yet" path.
+    metadata: null,
     categories: [
       {
         category: "docs",
@@ -59,6 +70,15 @@ export const fixtureSkills: SkillDetail[] = [
   {
     skillId: "skill_copywriter_pro",
     aggregationSourceUrl: "https://github.com/example-org/marktplatz/tree/main/backend/src/aggregation",
+    metadata: {
+      name: "Copywriter Pro",
+      description: "Drafts ad copy variants tuned to a stated audience and tone.",
+      githubUrl: "https://github.com/example-org/copywriter-pro",
+      license: "Apache-2.0",
+      maintainer: "example-org",
+      declaredCategory: "marketing",
+      githubStars: null,
+    },
     categories: [
       {
         category: "marketing",

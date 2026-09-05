@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import type { MarketplaceApiClient } from "../api/client.js";
 import type { SkillDetail } from "../api/types.js";
 import { CategorySection } from "../components/CategorySection.js";
+import { SkillMetadataCard } from "../components/SkillMetadataCard.js";
 
 export function SkillDetailPage({ apiClient }: { apiClient: MarketplaceApiClient }) {
   const { skillId } = useParams<{ skillId: string }>();
@@ -50,6 +51,7 @@ export function SkillDetailPage({ apiClient }: { apiClient: MarketplaceApiClient
         ← Back to overview
       </Link>
       <h1>{detail.skillId}</h1>
+      <SkillMetadataCard metadata={detail.metadata} />
       <p className="skill-detail-page__intro">
         Every metric below is shown separately per category — there is no combined score across categories.
       </p>
