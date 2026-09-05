@@ -23,6 +23,40 @@ Every subsequent call runs without asking — the decision is stored under
 `~/.skill-ab/config.json` (pseudonymous `account_id`, local signing secret,
 consent status).
 
+### Lowering per-run effort — watched skills and auto-detected checks
+
+Added after Phase 6 real usage surfaced that typing `--skill`,
+`--skill-source`, and `--check` on every invocation is real friction for
+someone contributing data during their normal work, especially with more
+than one skill in regular use (never test several at once — that measures
+a bundle's effect, not one skill's marginal effect, plan section 4/5):
+
+```bash
+# once, per skill you want data for:
+npm run dev -- watch add --skill ponytail --source /path/to/ponytail-skill
+npm run dev -- watch list
+npm run dev -- watch remove --skill ponytail
+
+# from then on, --skill/--skill-source can be omitted — `run` picks ONE
+# watched skill at random per invocation:
+npm run dev -- run --dir <working-directory> --task "<task description>"
+```
+
+`--check` can also be omitted — `detectCheckCommand` (`src/category/`)
+looks for a real `npm test` script, a pytest project (`pyproject.toml`,
+`pytest.ini`, `setup.cfg`, or a `tests/test_*.py` convention), `go.mod`, or
+`Cargo.toml`, in that order, and falls back to no check (`success: null`)
+rather than guessing wrong. An explicit `--check` always overrides
+detection.
+
+Deliberately NOT addressed here: turning the required second ("without
+skill") run into something that doesn't cost real time/tokens. That
+run is the actual counterfactual the whole comparison depends on — there
+is no way to shrink it without giving up the causal claim ("real usage,
+not vibes") the project is built on. What's reduced is everything
+*around* it: flags to remember, and the decision of which skill to test
+today when several are in normal use.
+
 Without `--endpoint`, the upload runs against a local mock
 (`.skill-ab-mock-uploads/<run_id>.json`) — Phase 3 (the real backend
 endpoint) doesn't exist yet.
@@ -73,12 +107,14 @@ npm run typecheck
 npm test
 ```
 
-40 tests (vitest) cover: randomization, category/size-bucket detection,
-readability/complexity heuristics, security-delta rules, the link
-capability test, `RunResult` assembly **validated against the real schema
-package**, mock upload (including rejecting invalid payloads before any
-write/send), and local config persistence. Real `claude` calls go through
-an injectable `ProcessRunner` interface and are replaced by fakes in tests
+56 tests (vitest) cover: randomization, category/size-bucket/check-command
+detection, readability/complexity heuristics, security-delta rules, the
+link capability test, `RunResult` assembly **validated against the real
+schema package**, mock upload (including rejecting invalid payloads before
+any write/send), watched-skill persistence, and local config persistence
+(including loading a config.json written before the `watchedSkills` field
+existed). Real `claude` calls go through an injectable `ProcessRunner`
+interface and are replaced by fakes in tests
 — a real end-to-end run was verified once manually against the local
 `claude` installation (see commit history), but isn't part of the
 automated test suite (would incur real API cost on every test run).

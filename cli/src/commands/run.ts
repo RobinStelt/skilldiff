@@ -7,9 +7,10 @@ import { realProcessRunner } from "../orchestration/processRunner.js";
 import type { Condition } from "../isolation/types.js";
 import { detectCategory } from "../category/detectCategory.js";
 import { determineSizeBucket } from "../category/sizeBucket.js";
+import { detectCheckCommand } from "../category/detectCheckCommand.js";
 import { determineSecurityDelta } from "../security/delta.js";
 import { determineCategoryMetricsForCondition } from "../metrics/categoryMetrics.js";
-import { loadOrCreateConfig, isFirstRun, markConsentSeen } from "../config/localConfig.js";
+import { loadOrCreateConfig, isFirstRun, markConsentSeen, pickRandomWatchedSkill } from "../config/localConfig.js";
 import { showConsentScreen } from "../consent/consentScreen.js";
 import { showLocalDelta } from "../report/localReport.js";
 import { submitRunResult } from "../upload/submit.js";
@@ -17,10 +18,12 @@ import { buildRunResult } from "../buildRunResult.js";
 import { getClaudeVersion, getCliBuildHash, getCliVersion } from "../versionInfo.js";
 
 export interface RunCommandOptions {
-  skillId: string;
+  /** Omit together with skillSourceDir to pick randomly from the watch list (`skill-ab watch add`) instead. */
+  skillId?: string;
   workDir: string;
   skillSourceDir?: string;
   task: string;
+  /** Omit to auto-detect from the project (detectCheckCommand.ts) — an explicit value always wins. */
   checkCommand?: string;
   claudeBin?: string;
   endpointUrl?: string;
@@ -37,7 +40,6 @@ function parseCheckCommand(cmd?: string): { cmd: string; args: string[] } | null
 
 export async function runCommand(options: RunCommandOptions): Promise<void> {
   const claudeBin = options.claudeBin ?? "claude";
-  const checkCommand = parseCheckCommand(options.checkCommand);
 
   // --- 8. Consent screen: only on the very first run ---------------------
   let config = loadOrCreateConfig();
@@ -53,12 +55,42 @@ export async function runCommand(options: RunCommandOptions): Promise<void> {
     }
   }
 
+  // --- Resolve which skill to test: explicit flags win, otherwise pick ONE
+  // at random from the watch list (never several — that would test a
+  // bundle, not one skill's marginal effect). Lowers the "which skill do I
+  // test today" decision cost for a user who normally has more than one
+  // skill in use. ---------------------------------------------------------
+  let skillId = options.skillId;
+  let skillSourceDir = options.skillSourceDir;
+  if (!skillId || !skillSourceDir) {
+    const watched = pickRandomWatchedSkill(config);
+    if (!watched) {
+      throw new Error(
+        "No --skill/--skill-source given, and no watched skills registered. " +
+          'Either pass both flags, or run "skill-ab watch add --skill <id> --source <path>" once.',
+      );
+    }
+    skillId = watched.skillId;
+    skillSourceDir = watched.skillSourceDir;
+    console.log(pc.dim(`No --skill given — picked "${skillId}" from your watch list.`));
+  }
+
+  // Auto-detect a check command from the project when none was given
+  // explicitly (detectCheckCommand.ts — same "transparent heuristic"
+  // spirit as category/size-bucket detection). An explicit --check always
+  // wins; omitting it no longer always means "no check", it means "try to
+  // find one first".
+  const checkCommand = options.checkCommand ? parseCheckCommand(options.checkCommand) : detectCheckCommand(options.workDir);
+  if (!options.checkCommand && checkCommand) {
+    console.log(pc.dim(`No --check given — auto-detected: ${checkCommand.cmd} ${checkCommand.args.join(" ")}`));
+  }
+
   // --- 2. Tiered control-run isolation: actually checked, not guessed ----
   const tierResult = await detectIsolationTier();
   console.log(pc.dim(`Isolation tier: ${tierResult.tier} (${tierResult.reason})`));
 
-  if (tierRequiresOutsideSourceCheck(tierResult.tier) && options.skillSourceDir) {
-    assertSkillSourceOutsideWorkDir(options.workDir, options.skillSourceDir);
+  if (tierRequiresOutsideSourceCheck(tierResult.tier) && skillSourceDir) {
+    assertSkillSourceOutsideWorkDir(options.workDir, skillSourceDir);
   }
 
   // --- 1. Run orchestration: builds the right invocation per tier --------
@@ -72,8 +104,8 @@ export async function runCommand(options: RunCommandOptions): Promise<void> {
         runtime,
         image: options.dockerImage ?? "skill-ab/claude-runner:latest",
         workDir: workDirCopy,
-        skillSourceDir: condition === "with_skill" ? options.skillSourceDir ?? null : null,
-        skillId: options.skillId,
+        skillSourceDir: condition === "with_skill" ? skillSourceDir ?? null : null,
+        skillId,
         condition,
         claudeInvocationArgs: [claudeBin, ...claudeArgs],
         apiKeyEnvVar: options.apiKeyEnvVar ?? "ANTHROPIC_API_KEY",
@@ -84,14 +116,14 @@ export async function runCommand(options: RunCommandOptions): Promise<void> {
     return { bin: claudeBin, args: claudeArgs };
   };
 
-  console.log(pc.bold(`\nStarting comparison run for skill "${options.skillId}" — order will be randomized...\n`));
+  console.log(pc.bold(`\nStarting comparison run for skill "${skillId}" — order will be randomized...\n`));
 
   const result = await runComparison({
     runner: realProcessRunner,
     buildInvocation,
     originalWorkDir: options.workDir,
-    skillId: options.skillId,
-    skillSourceDir: options.skillSourceDir ?? null,
+    skillId,
+    skillSourceDir: skillSourceDir ?? null,
     tier: tierResult.tier,
     linkCapability: tierResult.linkCapability,
     checkCommand,
@@ -114,7 +146,7 @@ export async function runCommand(options: RunCommandOptions): Promise<void> {
 
     // --- 7. Immediate local benefit ----------------------------------------
     showLocalDelta({
-      skillId: options.skillId,
+      skillId,
       withSkill: result.withSkill.runOutcome,
       withoutSkill: result.withoutSkill.runOutcome,
     });
@@ -133,7 +165,7 @@ export async function runCommand(options: RunCommandOptions): Promise<void> {
     ]);
 
     const runResult = buildRunResult({
-      skillId: options.skillId,
+      skillId,
       accountId: config.accountId,
       signingSecret: config.signingSecret,
       category,
