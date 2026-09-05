@@ -1,0 +1,29 @@
+{
+  "name": "skill-ab",
+  "version": "0.1.0",
+  "private": true,
+  "description": "CLI-Kern des Skill-A/B-Marktplatzes: führt eine Aufgabe mit und ohne Skill aus, misst automatisch und lädt das Ergebnis erzwungen zusammen hoch (Phase 2 aus skill-ab-marktplatz-plan.md).",
+  "type": "module",
+  "bin": {
+    "skill-ab": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@marktplatz/schema": "file:../schema",
+    "commander": "^12.1.0",
+    "picocolors": "^1.0.1",
+    "prompts": "^2.4.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.15",
+    "@types/prompts": "^2.4.9",
+    "typescript": "^5.5.4",
+    "tsx": "^4.16.2",
+    "vitest": "^2.0.5"
+  }
+}
