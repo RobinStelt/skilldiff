@@ -1,0 +1,279 @@
+:root {
+  color-scheme: light;
+  --bg: #fafafa;
+  --surface: #ffffff;
+  --border: #e2e2e2;
+  --text: #1a1a1a;
+  --text-muted: #666666;
+  --accent: #2f6f4f;
+  --warning-bg: #fff4e5;
+  --warning-text: #8a5300;
+  --tier-a: #2f6f4f;
+  --tier-b: #3f7fbf;
+  --tier-c: #b0b0b0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  line-height: 1.5;
+}
+
+main {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+@media (min-width: 600px) {
+  main {
+    padding: 2rem 1.5rem;
+  }
+}
+
+h1 {
+  font-size: 1.5rem;
+  word-break: break-word;
+}
+
+.overview-page__intro,
+.skill-detail-page__intro {
+  color: var(--text-muted);
+  max-width: 60ch;
+}
+
+/* --- Category filter ---------------------------------------------------- */
+
+.category-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1rem 0 1.5rem;
+}
+
+.category-filter__chip {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 0.4rem 0.9rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.category-filter__chip--active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+/* --- Skill list (overview) ---------------------------------------------- */
+
+.skill-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.skill-list__link {
+  display: block;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.9rem 1rem;
+  text-decoration: none;
+  color: var(--text);
+}
+
+.skill-list__id {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.4rem;
+  word-break: break-word;
+}
+
+.skill-list__categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.skill-list__category-chip {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 0.35rem;
+  padding: 0.15rem 0.5rem;
+}
+
+/* --- Skill detail page --------------------------------------------------- */
+
+.skill-detail-page__back {
+  display: inline-block;
+  margin-bottom: 1rem;
+  color: var(--accent);
+}
+
+.category-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 0.6rem;
+  padding: 1rem;
+  margin: 1.25rem 0;
+}
+
+.category-section__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+}
+
+.category-section__header h3 {
+  margin: 0;
+}
+
+.category-section__metrics {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+@media (min-width: 560px) {
+  .category-section__metrics {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.delta-metric {
+  background: var(--bg);
+  border-radius: 0.4rem;
+  padding: 0.6rem 0.75rem;
+}
+
+.delta-metric__label {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-bottom: 0.2rem;
+}
+
+.delta-metric__value strong {
+  font-size: 1.1rem;
+}
+
+.delta-metric__ci,
+.delta-metric__n {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.delta-metric__insufficient {
+  display: inline-block;
+  font-size: 0.85rem;
+  color: var(--warning-text);
+  background: var(--warning-bg);
+  border-radius: 0.3rem;
+  padding: 0.15rem 0.5rem;
+}
+
+.category-section__transparency {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.category-section__export {
+  font-size: 0.9rem;
+  color: var(--accent);
+}
+
+.seed-data-badge {
+  font-size: 0.75rem;
+  background: var(--warning-bg);
+  color: var(--warning-text);
+  border-radius: 999px;
+  padding: 0.15rem 0.6rem;
+}
+
+.account-diversity {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.account-diversity--low {
+  color: var(--warning-text);
+}
+
+.account-diversity__warning {
+  font-weight: 600;
+}
+
+/* --- Isolation tier bar --------------------------------------------------- */
+
+.isolation-bar__track {
+  display: flex;
+  width: 100%;
+  height: 0.6rem;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--border);
+  margin-bottom: 0.4rem;
+}
+
+.isolation-bar__segment--A {
+  background: var(--tier-a);
+}
+.isolation-bar__segment--B {
+  background: var(--tier-b);
+}
+.isolation-bar__segment--C {
+  background: var(--tier-c);
+}
+
+.isolation-bar__legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.isolation-bar__legend li {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.isolation-bar__swatch {
+  display: inline-block;
+  width: 0.6rem;
+  height: 0.6rem;
+  border-radius: 50%;
+}
+
+.isolation-bar__swatch--A {
+  background: var(--tier-a);
+}
+.isolation-bar__swatch--B {
+  background: var(--tier-b);
+}
+.isolation-bar__swatch--C {
+  background: var(--tier-c);
+}
