@@ -59,7 +59,25 @@ Without `--endpoint`, the upload runs against a local mock
 
 ### Shadow mode — comparisons that happen automatically, off to the side
 
-Opt-in, per project (never global, never silently enabled):
+"Install once, then it runs entirely in the background" needs three things
+in place, in this order — skipping the first two just makes shadow mode
+silently do nothing, by design (see below):
+
+1. **See the consent screen once.** Run `skill-ab run` interactively,
+   for any real task, at least once — the one-time consent screen only
+   exists there (a background hook process has no terminal to show a
+   prompt on). Shadow mode checks `standardConsentGiven` before ever
+   arming and simply refuses otherwise; it does not and cannot ask.
+2. **Register at least one skill:** `skill-ab watch add --skill <id> --source <path>`.
+3. **Persist where uploads go**, so a hook process spawned by Claude Code
+   days from now still knows: `skill-ab config set endpoint <url>`
+   (`skill-ab config show` to check, `config unset endpoint` to clear —
+   also works for `claude-bin`, normally unnecessary since that's
+   auto-detected). Without this, shadow mode had no durable way to know
+   where to upload — an env var only lives as long as whatever set it in
+   the current shell.
+
+Then, opt-in per project (never global, never silently enabled):
 
 ```bash
 skill-ab shadow install --dir /path/to/your/project
@@ -157,16 +175,19 @@ npm run typecheck
 npm test
 ```
 
-77 tests (vitest) cover: randomization, category/size-bucket/check-command
+87 tests (vitest) cover: randomization, category/size-bucket/check-command
 detection, readability/complexity heuristics, security-delta rules, the
 link capability test, `RunResult` assembly **validated against the real
 schema package**, mock upload (including rejecting invalid payloads before
 any write/send), watched-skill persistence, local config persistence
 (including loading a config.json written before the `watchedSkills` field
-existed), shadow-mode hook install/uninstall (`.claude/settings.json`
+existed), persisted `config set/unset` (endpoint/claude-bin) across
+reloads, shadow-mode hook install/uninstall (`.claude/settings.json`
 merging, never disturbing unrelated entries), the UserPromptSubmit/Stop
-decision logic, and transcript-usage parsing (including the "can't
-measure, don't fake zero" fallback). Real `claude` calls go through an
+decision logic (including refusing to arm without consent — a real gap
+found and closed: a background hook has no TTY to show the consent screen
+on, so it must check the decision, never ask for it), and transcript-usage
+parsing (including the "can't measure, don't fake zero" fallback). Real `claude` calls go through an
 injectable `ProcessRunner` interface and are replaced by fakes in tests
 — a real end-to-end run was verified once manually against the local
 `claude` installation (see commit history), but isn't part of the

@@ -158,6 +158,16 @@ export async function runShadowWorker(sessionId: string): Promise<void> {
     ]);
 
     const config = loadOrCreateConfig();
+    if (!config.standardConsentGiven) {
+      // Defense in depth — handleUserPromptSubmit already refuses to arm
+      // without consent (see its doc comment), so this should be
+      // unreachable in practice. Guards only the edge case of consent
+      // being revoked between arming and this point. The counterfactual
+      // claude call above already ran (arming already committed to it);
+      // what must not happen regardless is the actual upload.
+      log(`session ${sessionId}: consent not given, discarding without uploading`);
+      return;
+    }
     const [claudeVersion, cliBuildHash] = await Promise.all([
       getClaudeVersion(state.claudeBin),
       getCliBuildHash(),

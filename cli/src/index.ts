@@ -3,6 +3,7 @@ import { Command } from "commander";
 import pc from "picocolors";
 import { runCommand } from "./commands/run.js";
 import { watchAddCommand, watchRemoveCommand, watchListCommand } from "./commands/watch.js";
+import { configSetCommand, configUnsetCommand, configShowCommand } from "./commands/config.js";
 import {
   shadowInstallCommand,
   shadowUninstallCommand,
@@ -35,8 +36,15 @@ program
     "--check <command>",
     'Check command for success, e.g. "npm test" — exit code decides, no rating. Omit to auto-detect from the project (package.json/pytest/go.mod/Cargo.toml)',
   )
-  .option("--claude-bin <path>", "Path/name of the claude binary", "claude")
-  .option("--endpoint <url>", "Backend endpoint for the upload (omitted = local mock, Phase 3 not built yet)")
+  .option(
+    "--claude-bin <path>",
+    "Path/name of the claude binary. Omit to use \"skill-ab config set claude-bin\" (if set) or auto-detection — " +
+      "a hardcoded default here would always win over both.",
+  )
+  .option(
+    "--endpoint <url>",
+    "Backend endpoint for the upload. Omit to use \"skill-ab config set endpoint\" (if set), or run against a local mock",
+  )
   .option("--docker-image <image>", "Image for Tier A runs (must contain the claude CLI)")
   .action(async (opts) => {
     try {
@@ -96,6 +104,39 @@ watch
       process.exitCode = 1;
     }
   });
+
+const config = program
+  .command("config")
+  .description("Persisted defaults for --endpoint/--claude-bin — what makes shadow mode work without repeating flags forever");
+
+config
+  .command("set <key> <value>")
+  .description("Set a persisted default (\"endpoint\" or \"claude-bin\")")
+  .action((key: string, value: string) => {
+    try {
+      configSetCommand(key, value);
+    } catch (err) {
+      console.error(pc.red("Error:"), err instanceof Error ? err.message : err);
+      process.exitCode = 1;
+    }
+  });
+
+config
+  .command("unset <key>")
+  .description("Clear a persisted default")
+  .action((key: string) => {
+    try {
+      configUnsetCommand(key);
+    } catch (err) {
+      console.error(pc.red("Error:"), err instanceof Error ? err.message : err);
+      process.exitCode = 1;
+    }
+  });
+
+config
+  .command("show")
+  .description("Show current persisted defaults")
+  .action(() => configShowCommand());
 
 const shadow = program
   .command("shadow")

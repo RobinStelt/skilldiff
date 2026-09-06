@@ -14,6 +14,8 @@ function baseConfig(overrides: Partial<LocalConfig> = {}): LocalConfig {
     standardConsentGiven: true,
     contentOptIn: false,
     watchedSkills: [],
+    endpointUrl: null,
+    claudeBinOverride: null,
     ...overrides,
   };
 }
@@ -101,6 +103,26 @@ describe("handleUserPromptSubmit", () => {
       },
     );
     expect(loadShadowState("s3")?.foregroundCondition).toBe("without_skill");
+  });
+
+  it("skips without arming when consent was never given — a hook has no TTY to ask for it (real bug this closes)", () => {
+    const config = baseConfig({
+      standardConsentGiven: false,
+      watchedSkills: [{ skillId: "ponytail", skillSourceDir: "C:\\skills\\ponytail" }],
+    });
+    const outcome = handleUserPromptSubmit(
+      { session_id: "s-no-consent", prompt: "task", cwd: "C:\\project" },
+      {
+        config,
+        snapshot: (cwd) => `${cwd}-snapshot`,
+        isSkillLinked: () => true,
+        detectCheckCommand: () => null,
+        endpointUrl: null,
+        claudeBin: "claude",
+      },
+    );
+    expect(outcome).toEqual({ status: "skipped", reason: "no_consent" });
+    expect(loadShadowState("s-no-consent")).toBeNull();
   });
 
   it("never selects more than one skill even when several are watched", () => {

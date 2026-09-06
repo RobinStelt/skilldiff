@@ -36,6 +36,23 @@ export interface LocalConfig {
    * decision cost for a user who has more than one skill in normal use.
    */
   watchedSkills: WatchedSkill[];
+  /**
+   * Persisted `--endpoint` default, set via `skill-ab config set endpoint
+   * <url>`. Without this, "install once, then it just runs in the
+   * background" (shadow mode) had no durable way to know where to upload
+   * at all — `SKILL_AB_ENDPOINT` only exists as long as whatever set it in
+   * the environment does, which a background hook process spawned by
+   * Claude Code, days after setup, generally isn't. `run --endpoint`
+   * still overrides this per-call.
+   */
+  endpointUrl: string | null;
+  /**
+   * Persisted `--claude-bin` default, set via `skill-ab config set
+   * claude-bin <path>`. Usually unnecessary — `resolveClaudeBin`
+   * (isolation/claudeBinary.ts) auto-detects a real `claude.exe` on
+   * Windows — but a manual override for a setup it can't find.
+   */
+  claudeBinOverride: string | null;
 }
 
 /** Default storage location. Kept as a function (not a module constant) so tests can pass their own `configDir`. */
@@ -55,6 +72,8 @@ function createDefaultConfig(): LocalConfig {
     standardConsentGiven: false,
     contentOptIn: false,
     watchedSkills: [],
+    endpointUrl: null,
+    claudeBinOverride: null,
   };
 }
 
@@ -63,10 +82,10 @@ export function loadOrCreateConfig(configDir: string = defaultConfigDir()): Loca
   if (existsSync(path)) {
     try {
       const parsed = JSON.parse(readFileSync(path, "utf-8")) as Partial<LocalConfig>;
-      // watchedSkills was added after the first release — fill it in for a
-      // config.json written before this field existed, instead of crashing
-      // on config.watchedSkills.length elsewhere.
-      return { watchedSkills: [], ...parsed } as LocalConfig;
+      // watchedSkills/endpointUrl/claudeBinOverride were added after the
+      // first release — fill in defaults for a config.json written before
+      // they existed, instead of crashing wherever they're read.
+      return { watchedSkills: [], endpointUrl: null, claudeBinOverride: null, ...parsed } as LocalConfig;
     } catch {
       // corrupt file -> create a fresh one instead of crashing
     }
@@ -123,6 +142,21 @@ export function removeWatchedSkill(
     ...config,
     watchedSkills: config.watchedSkills.filter((s) => s.skillId !== skillId),
   };
+  saveConfig(updated, configDir);
+  return updated;
+}
+
+export type ConfigurableKey = "endpoint" | "claude-bin";
+
+/** Backs `skill-ab config set/unset` — the small, persisted set of defaults `run` and shadow mode fall back to. */
+export function setConfigValue(
+  config: LocalConfig,
+  key: ConfigurableKey,
+  value: string | null,
+  configDir: string = defaultConfigDir(),
+): LocalConfig {
+  const updated: LocalConfig =
+    key === "endpoint" ? { ...config, endpointUrl: value } : { ...config, claudeBinOverride: value };
   saveConfig(updated, configDir);
   return updated;
 }

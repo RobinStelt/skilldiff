@@ -40,10 +40,10 @@ function parseCheckCommand(cmd?: string): { cmd: string; args: string[] } | null
 }
 
 export async function runCommand(options: RunCommandOptions): Promise<void> {
-  const claudeBin = resolveClaudeBin(options.claudeBin);
-
   // --- 8. Consent screen: only on the very first run ---------------------
   let config = loadOrCreateConfig();
+  const claudeBin = resolveClaudeBin(options.claudeBin ?? config.claudeBinOverride ?? undefined);
+  const endpointUrl = options.endpointUrl ?? config.endpointUrl ?? null;
   if (isFirstRun(config)) {
     const decision = await showConsentScreen();
     config = markConsentSeen(config, decision);
@@ -186,7 +186,7 @@ export async function runCommand(options: RunCommandOptions): Promise<void> {
     });
 
     const uploadResult = await submitRunResult(runResult, {
-      endpointUrl: options.endpointUrl ?? null,
+      endpointUrl,
       signingSecret: config.signingSecret,
     });
     if (uploadResult.ok) {

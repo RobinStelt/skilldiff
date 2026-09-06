@@ -36,8 +36,14 @@ export function shadowUserPromptSubmitCommand(): void {
     snapshot: (cwd) => freshWorkDirCopy(cwd, "shadow-before"),
     isSkillLinked,
     detectCheckCommand,
-    endpointUrl: process.env.SKILL_AB_ENDPOINT ?? null,
-    claudeBin: resolveClaudeBin(process.env.SKILL_AB_CLAUDE_BIN),
+    // Persisted config ("skill-ab config set endpoint/claude-bin") is what
+    // makes shadow mode actually durable across restarts/days — an env var
+    // only lives as long as whatever set it in the environment, which a
+    // hook process spawned by Claude Code long after setup generally
+    // isn't. SKILL_AB_ENDPOINT/SKILL_AB_CLAUDE_BIN still work as an
+    // explicit override for anyone who does want to set it that way.
+    endpointUrl: process.env.SKILL_AB_ENDPOINT ?? config.endpointUrl ?? null,
+    claudeBin: resolveClaudeBin(process.env.SKILL_AB_CLAUDE_BIN ?? config.claudeBinOverride ?? undefined),
   });
 }
 

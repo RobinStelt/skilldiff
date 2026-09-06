@@ -26,7 +26,7 @@ export interface UserPromptSubmitDeps {
 
 export type UserPromptSubmitOutcome =
   | { status: "armed"; skillId: string; foregroundCondition: Condition }
-  | { status: "skipped"; reason: "no_watched_skills" };
+  | { status: "skipped"; reason: "no_watched_skills" | "no_consent" };
 
 /**
  * Decides whether to "arm" shadow mode for this turn, and if so, which
@@ -36,11 +36,29 @@ export type UserPromptSubmitOutcome =
  *
  * Never picks more than one skill (plan section 4/5, section 7.1) even if
  * several are watched — one random pick per turn.
+ *
+ * Consent gate (real bug, found and closed while explaining shadow mode to
+ * the user, not caught by any test until now): `run`'s interactive flow
+ * shows a one-time consent screen and refuses to upload without it
+ * (`commands/run.ts`, "no upload without consent"). Shadow mode never
+ * went through that flow at all — a hook process has no TTY to show a
+ * prompt on — so without this check it would silently arm and upload
+ * using whatever `LocalConfig.standardConsentGiven` happens to be,
+ * including `false` on a config that was never shown the screen (its
+ * default). The fix isn't to prompt from a hook (impossible, no TTY) —
+ * it's to require consent to already be true, exactly like `run` requires
+ * it before uploading, and simply not arm otherwise. A user who only ever
+ * uses shadow mode still needs one real `skill-ab run` first to see that
+ * screen once.
  */
 export function handleUserPromptSubmit(
   input: UserPromptSubmitInput,
   deps: UserPromptSubmitDeps,
 ): UserPromptSubmitOutcome {
+  if (!deps.config.standardConsentGiven) {
+    return { status: "skipped", reason: "no_consent" };
+  }
+
   const rng = deps.rng ?? Math.random;
   const now = deps.now ?? Date.now;
 
