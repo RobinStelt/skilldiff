@@ -29,6 +29,21 @@ npm run typecheck
 npm test                # uses fixtures, no backend needed
 ```
 
+For the whole stack at once (Postgres + backend + frontend, no local
+Node needed): `docker compose up --build` at the repo root.
+
+## Admin (not from any briefing — catalog metadata, not aggregation)
+
+`/admin/login` → `/admin/skills` → `/admin/skills/:skillId` lets a logged-in
+admin attach display metadata (name, description, GitHub link, license,
+maintainer, catalog category) to a `skill_id` — purely descriptive, never
+fed into the measured deltas (`backend/db/migrations/003_admin_and_skill_metadata.sql`).
+Create the first admin with `backend/scripts/create-admin.ts`; there's no
+self-registration. `SkillMetadataCard` renders this on the public skill
+detail page and in the overview list (GitHub ★ count included, refreshed
+periodically by `backend/scripts/refresh-github-stars.ts`, not fetched
+live per page view).
+
 ## How each acceptance criterion is met
 
 | Criterion | Where |

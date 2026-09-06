@@ -2,6 +2,8 @@
 
 Implementiert `04-marktplatz-phase3-backend.md`. Node.js/TypeScript, Fastify, Postgres — passend zum Stack von `cli/` und `@marktplatz/schema`.
 
+Für den kompletten Stack (Postgres + Backend + Frontend) in einem Rutsch: `docker compose up --build` im Repo-Root (`../docker-compose.yml`). Der `docker-compose.yml` hier im Verzeichnis startet nur Postgres, für die schnelle Entwicklungsschleife mit `npm run dev`.
+
 ## Setup
 
 ```bash

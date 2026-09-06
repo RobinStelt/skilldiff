@@ -1,0 +1,75 @@
+# Everything the marketplace needs, in one `docker compose up` — Postgres,
+# migrations, backend API, and the frontend, all built from source (build
+# context is this directory; see backend/Dockerfile and
+# frontend/Dockerfile for why: both depend on ../schema via a workspace
+# "file:" reference, so the build needs schema/ and the consuming package
+# side by side, exactly like the repo layout).
+#
+# Passwords below match db/migrations/001_init.sql's defaults — change
+# both places together for anything beyond a local machine. This file is
+# for running the marketplace, not for developing backend/frontend alone;
+# backend/docker-compose.yml (Postgres only) plus `npm run dev` stays the
+# faster inner loop for that (see backend/README.md, frontend/README.md).
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: marktplatz
+    ports:
+      - "5432:5432"
+    volumes:
+      - marktplatz-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  # One-shot: applies db/migrations/*.sql, then exits. Uses the Dockerfile's
+  # `build` stage (still has devDependencies/tsx — the final backend image
+  # is pruned to production deps only and can't run scripts/migrate.ts).
+  migrate:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: build
+    working_dir: /repo/backend
+    command: ["npx", "tsx", "scripts/migrate.ts"]
+    environment:
+      MIGRATION_DATABASE_URL: postgres://postgres:postgres@postgres:5432/marktplatz
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      APP_DATABASE_URL: postgres://app_backend:change-me-app-backend@postgres:5432/marktplatz
+      CONTENT_WRITER_DATABASE_URL: postgres://content_writer:change-me-content-writer@postgres:5432/marktplatz
+      PORT: "3000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        # Baked in at image build time (Vite inlines VITE_* vars) — must be
+        # a URL the BROWSER can reach, i.e. the backend's host-published
+        # port above, not the Docker-internal service name "backend".
+        VITE_BACKEND_URL: http://localhost:3000
+    ports:
+      - "8081:80"
+    depends_on:
+      - backend
+
+volumes:
+  marktplatz-postgres:
