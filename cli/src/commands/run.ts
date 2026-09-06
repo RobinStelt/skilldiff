@@ -185,7 +185,10 @@ export async function runCommand(options: RunCommandOptions): Promise<void> {
       cliBuildHash,
     });
 
-    const uploadResult = await submitRunResult(runResult, { endpointUrl: options.endpointUrl ?? null });
+    const uploadResult = await submitRunResult(runResult, {
+      endpointUrl: options.endpointUrl ?? null,
+      signingSecret: config.signingSecret,
+    });
     if (uploadResult.ok) {
       console.log(pc.green(`✓ Result transmitted (${uploadResult.mode}): ${uploadResult.target}`));
     } else {

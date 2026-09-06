@@ -38,3 +38,5 @@ export type {
 
 export { validateRunResult, isRunResult } from "./validate.js";
 export type { ValidationError } from "./validate.js";
+
+export { canonicalJson } from "./canonicalJson.js";

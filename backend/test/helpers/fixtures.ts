@@ -1,5 +1,5 @@
-import type { RunResult } from "@marktplatz/schema";
-import { canonicalizeLikeCli, computeHmac } from "../../src/canonical.js";
+import { canonicalJson, type RunResult } from "@marktplatz/schema";
+import { computeHmac } from "../../src/canonical.js";
 
 /** Mirrors schema/fixtures/valid/feature.json — kept in sync manually since backend can't import fixtures from another package. */
 export function buildUnsignedRunResult(overrides: Partial<RunResult> = {}): Omit<RunResult, "signature"> {
@@ -31,6 +31,6 @@ export function buildUnsignedRunResult(overrides: Partial<RunResult> = {}): Omit
 /** Builds a RunResult signed exactly the way the current CLI signs (src/canonical.ts). */
 export function buildSignedRunResult(secret: string, overrides: Partial<RunResult> = {}): RunResult {
   const withoutSignature = buildUnsignedRunResult(overrides);
-  const signature = computeHmac(canonicalizeLikeCli(withoutSignature), secret);
+  const signature = computeHmac(canonicalJson(withoutSignature), secret);
   return { ...withoutSignature, signature } as RunResult;
 }

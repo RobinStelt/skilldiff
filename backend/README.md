@@ -16,7 +16,7 @@ npm run dev
 
 ## Architektur
 
-- **`src/canonical.ts`** — Signaturprüfung. Repliziert bewusst exakt die Kanonisierung aus `cli/src/upload/signature.ts`, damit echte CLI-Uploads verifizierbar sind.
+- **`src/canonical.ts`** — Signaturprüfung, über die gemeinsame `canonicalJson`-Funktion aus `@marktplatz/schema` (`schema/src/canonicalJson.ts`) — dieselbe, mit der `cli/src/upload/signature.ts` signiert.
 - **`src/accounts/`** — Account-Registrierung (`POST /v1/accounts`) und Reputationsdaten.
 - **`src/ingestion/`** — Validierung → Signaturprüfung → Duplikat-Check → Speicherung (`POST /v1/run-results`).
 - **`src/aggregation/`** — Median-Delta + Bootstrap-Konfidenzintervall + Sample-Size, strikt pro Skill+Kategorie getrennt (`src/aggregation/metrics.ts`), plus Reputations-/Tier-/Build-Hash-Gewichtung (`src/aggregation/weighting.ts`).
@@ -27,12 +27,12 @@ npm run dev
 - **`db/migrations/001_init.sql`** — Schema + Rollen/Grants für die `content_ref`-Trennung (briefing Punkt 2).
 - **`db/migrations/002_seed_accounts_and_public_api.sql`** — `accounts.is_seed_account`-Flag (Briefing 06 Punkt 4, gesetzt über `scripts/mark-seed-account.ts`, nie über HTTP).
 
-## Zwei offene Punkte aus dieser Phase — nicht in `backend/` lösbar
+## Zwei ursprünglich offene Punkte — inzwischen beide gelöst
 
-Beide betreffen `cli/src/upload/signature.ts` (Briefing 03), das gerade parallel übersetzt wird — deshalb hier dokumentiert statt dort angefasst:
+Beide betrafen das Zusammenspiel mit `cli/src/upload/signature.ts` (Briefing 03) und waren hier zunächst nur dokumentiert, nicht behoben:
 
-1. **Signaturmodell.** `localConfig.ts` sagt, der `signingSecret` verlasse nie den Rechner — für eine serverseitige HMAC-Prüfung muss der Server das Secret aber kennen. Lösung in dieser Phase (siehe Nutzer-Entscheidung): expliziter Registrierungs-Endpoint `POST /v1/accounts { account_id, signing_secret }`, den das CLI einmalig aufrufen muss. Das widerspricht dem bestehenden Kommentar in `localConfig.ts` — der sollte in der laufenden CLI-Übersetzung korrigiert und ein Aufruf dieses Endpoints ergänzt werden. Sauberere Alternative für später: Ed25519 (Server speichert nur den öffentlichen Schlüssel, echtes TOFU), aber das braucht eine Schema-Änderung.
-2. **Signatur-Lücke.** `JSON.stringify(payload, Object.keys(payload).sort())` mit Array-Replacer filtert verschachtelte Objektschlüssel auf allen Ebenen nach derselben flachen Liste — `with_skill`, `without_skill`, `category_metrics`, `security_delta` werden dadurch faktisch als `{}` signiert, nicht mit ihrem echten Inhalt. Die Signatur schützt aktuell nur die Top-Level-Skalarfelder vor nachträglicher Manipulation. `src/canonical.ts` repliziert das Verhalten bewusst 1:1 (sonst würden echte CLI-Uploads fehlschlagen) und dokumentiert die Lücke ausführlich. Empfehlung: eine einzige, korrekte Kanonisierungsfunktion in `@marktplatz/schema` exportieren, die CLI und Backend beide importieren, statt zwei unabhängige Implementierungen zu pflegen.
+1. **Signaturmodell.** `localConfig.ts` sagt, der `signingSecret` verlasse nie den Rechner — für eine serverseitige HMAC-Prüfung muss der Server das Secret aber kennen. Gelöst über `POST /v1/accounts { account_id, signing_secret }`: `cli/src/upload/submit.ts` ruft diesen Endpoint jetzt vor jedem Upload automatisch auf (idempotent, kein separater Einmal-Schritt nötig) — vorher rief das CLI diesen Endpoint nirgends auf, ein frischer, nie zuvor registrierter Account wäre beim allerersten Upload mit `401 unregistered_account` gescheitert. Real verifiziert mit einem nagelneuen Account gegen einen laufenden Server.
+2. **Signatur-Lücke.** `JSON.stringify(payload, Object.keys(payload).sort())` mit Array-Replacer filterte verschachtelte Objektschlüssel auf allen Ebenen nach derselben flachen Liste — `with_skill`, `without_skill`, `category_metrics`, `security_delta` wurden dadurch faktisch als `{}` signiert, nicht mit ihrem echten Inhalt. Gelöst durch `canonicalJson` in `schema/src/canonicalJson.ts` — eine echte rekursive Kanonisierung, die CLI und Backend jetzt beide importieren, statt zwei unabhängige (und in der CLI fehlerhafte) Implementierungen zu pflegen. **Bricht bewusst das alte Signaturformat** — bewusst jetzt gemacht, vor jedem echten Deployment, nicht danach. Real verifiziert: eine mit der neuen Funktion signierte Nutzlast wird akzeptiert, eine Manipulation an einem verschachtelten Feld (`with_skill.tokens`) wird jetzt korrekt mit `401 invalid_signature` abgelehnt (vorher unentdeckt geblieben).
 
 ## Tests
 

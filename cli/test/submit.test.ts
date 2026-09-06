@@ -51,4 +51,53 @@ describe("submitRunResult", () => {
     expect(result.ok).toBe(false);
     expect(readdirSync(mockDir)).toHaveLength(0);
   });
+
+  it("registers the account (POST /v1/accounts at the endpoint's origin) before uploading, when a signingSecret is given", async () => {
+    const calls: Array<{ url: string; body: unknown }> = [];
+    const fetchImpl = (async (url: string | URL, init?: RequestInit) => {
+      calls.push({ url: url.toString(), body: init?.body ? JSON.parse(init.body as string) : null });
+      return new Response("{}", { status: url.toString().includes("/v1/accounts") ? 201 : 200 });
+    }) as typeof fetch;
+
+    const result = await submitRunResult(validRunResult, {
+      endpointUrl: "http://example.com/v1/run-results",
+      signingSecret: "secret",
+      fetchImpl,
+    });
+
+    expect(result.ok).toBe(true);
+    expect(calls).toHaveLength(2);
+    expect(calls[0]!.url).toBe("http://example.com/v1/accounts");
+    expect(calls[0]!.body).toEqual({ account_id: validRunResult.account_id, signing_secret: "secret" });
+    expect(calls[1]!.url).toBe("http://example.com/v1/run-results");
+  });
+
+  it("aborts the upload (never calls run-results) when registration is rejected", async () => {
+    const calls: string[] = [];
+    const fetchImpl = (async (url: string | URL) => {
+      calls.push(url.toString());
+      return new Response("{}", { status: 409 });
+    }) as typeof fetch;
+
+    const result = await submitRunResult(validRunResult, {
+      endpointUrl: "http://example.com/v1/run-results",
+      signingSecret: "secret",
+      fetchImpl,
+    });
+
+    expect(result.ok).toBe(false);
+    expect(calls).toEqual(["http://example.com/v1/accounts"]);
+  });
+
+  it("skips registration entirely when no signingSecret is given (e.g. shadow mode reusing an already-registered account)", async () => {
+    const calls: string[] = [];
+    const fetchImpl = (async (url: string | URL) => {
+      calls.push(url.toString());
+      return new Response("{}", { status: 200 });
+    }) as typeof fetch;
+
+    await submitRunResult(validRunResult, { endpointUrl: "http://example.com/v1/run-results", fetchImpl });
+
+    expect(calls).toEqual(["http://example.com/v1/run-results"]);
+  });
 });

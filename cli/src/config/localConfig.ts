@@ -12,7 +12,14 @@ export interface WatchedSkill {
 export interface LocalConfig {
   /** Pseudonymous, long-term stable account ID (plan section 4). No email, no real name. */
   accountId: string;
-  /** Local signing secret — never leaves this machine, only used to HMAC-sign before upload. */
+  /**
+   * Local HMAC signing secret. Used to sign every RunResult before upload
+   * — and, when uploading to a real backend, sent once per upload to
+   * `POST /v1/accounts` (upload/submit.ts) so the backend can verify that
+   * signature at all; a signature alone can't reveal the secret that
+   * produced it, so there's no way around the backend knowing it. Never
+   * sent anywhere else, and never part of a RunResult payload itself.
+   */
   signingSecret: string;
   /** Has the one-time consent screen (standard consent, not content_opt_in) already been shown? */
   consentSeenAt: string | null;

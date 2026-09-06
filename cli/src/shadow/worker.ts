@@ -187,7 +187,10 @@ export async function runShadowWorker(sessionId: string): Promise<void> {
       cliBuildHash,
     });
 
-    const uploadResult = await submitRunResult(runResult, { endpointUrl: state.endpointUrl });
+    const uploadResult = await submitRunResult(runResult, {
+      endpointUrl: state.endpointUrl,
+      signingSecret: config.signingSecret,
+    });
     log(
       uploadResult.ok
         ? `session ${sessionId}: uploaded run_id=${runResult.run_id} (${uploadResult.mode})`
