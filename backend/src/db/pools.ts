@@ -17,6 +17,13 @@ export interface DbPools {
 }
 
 export function createPools(config: Config): DbPools {
+  // Enforced here, not in config.loadConfig() — this is the one real
+  // consumer (server.ts) that needs both pools; one-off scripts using
+  // only config.appDatabaseUrl directly (create-admin.ts and friends)
+  // shouldn't have to set an env var they never use.
+  if (!config.contentWriterDatabaseUrl) {
+    throw new Error("CONTENT_WRITER_DATABASE_URL is not set");
+  }
   const app = new Pool({ connectionString: config.appDatabaseUrl });
   const contentWriter = new Pool({ connectionString: config.contentWriterDatabaseUrl });
   return {

@@ -42,13 +42,16 @@ proxy or an antivirus's web shield (hit this for real; see
 **Creating the first admin login** (or running any other one-off script —
 `mark-seed-account.ts`, `refresh-github-stars.ts`) isn't part of `up`,
 since it needs a choice only you can make (the credentials), and the
-production backend image is intentionally pruned to runtime dependencies
-only (no `tsx`, so scripts don't run inside it as-is). Run it from a local
-`backend/` checkout instead, pointed at the Dockerized Postgres:
+production backend image doesn't include `backend/scripts/` at all
+(only `package.json`, `node_modules`, `dist`, and `db` are copied into
+its final stage — see `backend/Dockerfile`). Run it from a local
+`backend/` checkout instead, pointed at the Dockerized Postgres. Only
+`APP_DATABASE_URL` is needed — `create-admin.ts` never touches the
+content-writer connection:
 
 ```bash
 cd backend && npm install
-APP_DATABASE_URL=postgres://app_backend:change-me-app-backend@localhost:5432/marktplatz \
+APP_DATABASE_URL=postgres://app_backend:change-me-app-backend@localhost:5432/skilldiff \
   npx tsx scripts/create-admin.ts <username> <password>
 ```
 
