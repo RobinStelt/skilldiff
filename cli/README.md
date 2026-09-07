@@ -171,13 +171,22 @@ src/
 
 | Tier | Implementation |
 |---|---|
-| **A** (Docker/Podman) | `docker info`/`podman info` is actually executed, not guessed. The `docker run` call itself (`isolation/dockerRun.ts`) mounts only the working directory and — only for `with_skill` — the one allowed skill folder. **Prerequisite this phase does NOT deliver:** a Docker image with the `claude` CLI preinstalled (default name `skill-ab/claude-runner:latest`, overridable via `--docker-image`). Without that image, the container call fails — reproduced and documented in a local smoke test with real, running Docker, no guesswork. |
+| **A** (Docker/Podman) | `docker info`/`podman info` is actually executed, not guessed. The `docker run` call itself (`isolation/dockerRun.ts`) mounts only the working directory and — only for `with_skill` — the one allowed skill folder. **Prerequisite this phase does NOT deliver:** a Docker image with the `claude` CLI preinstalled (default name `skill-ab/claude-runner:latest`, overridable via `--docker-image`). Without that image, the container call fails — reproduced and documented in a local smoke test with real, running Docker, no guesswork. Tier A is always preferred once Docker/Podman is running, even if you don't have that image or you authenticate via subscription login rather than an API key (Tier A only forwards `ANTHROPIC_API_KEY`, if set) — pass `--no-docker` to force Tier B/C instead. |
 | **B** (symlink/junction + isolated home) | Fully implemented, including a real capability test instead of a platform assumption. Directly informed by `../../skill-matching-hook/skill-gate-test/LOKAL-PROTOKOLL.md`: `fs.symlinkSync` is actually attempted and verified via `readlinkSync` (not just try/catch, because `ln -s` on Windows without Developer Mode silently creates an empty file instead of a symlink); NTFS junction is the automatic fallback. Every condition also gets a fresh, empty `$HOME`/`%USERPROFILE%` — necessary because `--setting-sources project` alone is demonstrably NOT enough to keep globally enabled plugin skills out (also confirmed in the local protocol). |
 | **C** (best effort) | Runs with no isolation guarantee at all, in the (copied) original working directory — deliberately the lowest trust tier, no extra code needed. |
 
 Every condition also runs in a **fresh working copy** (not the original), so
 the two conditions are guaranteed to never share file state — regardless of
 the isolation tier.
+
+Both `claude` invocations run with `--permission-mode acceptEdits`. Real bug
+this fixed: a headless `claude -p` has no TTY to prompt for permission, so
+without this, every Edit/Write tool call is silently denied — the run
+"completes" and reports a result, but neither condition can actually touch a
+file, which defeats the entire comparison equally in both directions rather
+than failing loudly. Safe specifically because the argument is always this
+run's disposable working copy (or a container mount), never your real
+project — that's the whole reason the copy exists.
 
 ## What this phase deliberately does NOT deliver
 
