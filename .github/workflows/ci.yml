@@ -1,0 +1,109 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  # schema on its own first — a fast fail here means nothing else needs to
+  # run, and it establishes that its published contract (types + zod
+  # schemas) is internally consistent before anything builds against it.
+  schema:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+        working-directory: schema
+      - run: npm run typecheck
+        working-directory: schema
+      - run: npm test
+        working-directory: schema
+
+  # cli/backend/frontend each depend on schema via a `file:../schema`
+  # dependency pointing at its *built* output (schema/package.json's
+  # main/exports point at ./dist) — so each job below builds schema itself
+  # first (cheap: it's just tsc), exactly like a fresh clone following
+  # GETTING_STARTED.md/README.md would. This is deliberately NOT split into
+  # a shared "build schema once, pass the artifact along" step: schema's
+  # own node_modules (zod) has to be resolvable too when cli's esbuild
+  # bundles through schema/dist, and passing dist alone without
+  # node_modules silently breaks that resolution — installing schema fresh
+  # in each job sidesteps that class of bug entirely.
+  cli:
+    needs: schema
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci && npm run build
+        working-directory: schema
+      - run: npm ci
+        working-directory: cli
+      - run: npm run typecheck
+        working-directory: cli
+      - run: npm test
+        working-directory: cli
+      - run: npm run build
+        working-directory: cli
+      # Same real check GETTING_STARTED.md documents doing by hand: a
+      # `npm pack` + isolated install must succeed, and the installed
+      # binary must actually run — catches a published-package regression
+      # (e.g. a dependency wrongly left out of the esbuild bundle) that
+      # typecheck/unit tests alone wouldn't.
+      - run: |
+          npm pack --pack-destination /tmp
+          mkdir /tmp/skillab-install-test && cd /tmp/skillab-install-test
+          npm init -y >/dev/null
+          npm install /tmp/skill-ab-*.tgz
+          ./node_modules/.bin/skill-ab --version
+        working-directory: cli
+
+  # Unit tests only — no live Postgres in this workflow yet, so
+  # test:integration (which needs TEST_DATABASE_URL_APP_ROLE etc.) isn't
+  # run here; it stays a local/manual step (backend/README.md). Every
+  # integration test is written to skip cleanly when those env vars are
+  # unset, so nothing here needs to change if that's added later.
+  backend:
+    needs: schema
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci && npm run build
+        working-directory: schema
+      - run: npm ci
+        working-directory: backend
+      - run: npm run typecheck
+        working-directory: backend
+      - run: npm test
+        working-directory: backend
+      - run: npm run build
+        working-directory: backend
+
+  frontend:
+    needs: schema
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci && npm run build
+        working-directory: schema
+      - run: npm ci
+        working-directory: frontend
+      - run: npm run typecheck
+        working-directory: frontend
+      - run: npm test
+        working-directory: frontend
+      - run: npm run build
+        working-directory: frontend
