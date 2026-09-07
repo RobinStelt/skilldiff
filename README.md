@@ -7,8 +7,8 @@ security scan. Full rationale: [`skill-ab-marktplatz-plan.md`](skill-ab-marktpla
 
 ## Just want to try the CLI?
 
-→ [`GETTING_STARTED.md`](GETTING_STARTED.md) — clone, build, run, no npm
-publish required.
+→ [`GETTING_STARTED.md`](GETTING_STARTED.md) — `npm install -g skill-ab`
+(or build from source), run a comparison, optionally contribute it.
 
 ## Structure
 
@@ -55,3 +55,13 @@ APP_DATABASE_URL=postgres://app_backend:change-me-app-backend@localhost:5432/mar
 For active backend/frontend development (fast rebuilds, no image
 rebuilding per change), use each package's own `npm run dev` instead —
 `backend/README.md` and `frontend/README.md`.
+
+## License
+
+[MIT](LICENSE).
+
+## Legal (site)
+
+[`PRIVACY.md`](PRIVACY.md), [`TERMS.md`](TERMS.md),
+[`IMPRESSUM.md`](IMPRESSUM.md) — drafts, not a substitute for real legal
+review; see the notice at the top of each.

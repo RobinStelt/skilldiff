@@ -2,6 +2,7 @@
   "name": "@skilldiff/schema",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "description": "Contract layer (types + runtime validation) between the CLI and backend of SkillDiff. No runtime dependency on CLI or backend code.",
   "type": "module",
   "main": "./dist/index.js",

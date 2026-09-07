@@ -2,6 +2,7 @@
   "name": "@skilldiff/frontend",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "description": "Public marketplace frontend for SkillDiff: per-skill, per-category delta view with sample-size, isolation-tier, and account-diversity transparency (Phase 4, briefing 05-marktplatz-phase4-frontend.md).",
   "type": "module",
   "scripts": {

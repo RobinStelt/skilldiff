@@ -2,6 +2,7 @@
   "name": "@skilldiff/backend",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "description": "Ingestion, storage, aggregation, reputation weighting, anomaly flagging and public export API for SkillDiff (Phase 3, briefing 04-marktplatz-phase3-backend.md).",
   "type": "module",
   "scripts": {
