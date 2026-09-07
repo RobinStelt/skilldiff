@@ -5,10 +5,14 @@ SkillDiff software actually does, written by the people who
 built it, to give you (and a lawyer, before this goes live for real) an
 accurate starting point. If you operate this service for the public,
 especially from the EU, have this reviewed — GDPR applies, and Germany's
-Telemediengesetz/DDG may require an Impressum (operator identification)
-that isn't included here. Placeholders below are marked `[…]`.
+Digitale-Dienste-Gesetz (DDG, formerly TMG) requires an Impressum
+(operator identification), included separately at
+[IMPRESSUM.md](IMPRESSUM.md). A few placeholders remain below, marked
+`[…]`.
 
-_Last updated: [DATE]. Operator: [NAME/ENTITY], [ADDRESS], [CONTACT EMAIL]._
+_Last updated: 2026-09-07. Operator: Robin Steltmann, Schulstraße 13, 34479
+Breuna, Germany, robin.steltmann@googlemail.com — see also
+[IMPRESSUM.md](IMPRESSUM.md)._
 
 ## What this service is
 
@@ -55,11 +59,14 @@ can be invalidated by logging out.
 
 ### Server-side technical data
 
-The application itself does not log requests or IP addresses. Whatever
-infrastructure it runs on (a hosting provider, a reverse proxy) likely
-keeps its own short-term connection/access logs as standard operational
-practice, outside this application's control — `[describe your hosting
-provider's logging here once deployed]`.
+The application itself does not log requests or IP addresses. The
+production deployment sits behind a Caddy reverse proxy (see
+`docker/DEPLOY.md`); as configured, that proxy has no explicit `log`
+directive for this site either, so no access log is written there by
+default. If that configuration changes, this section needs updating
+first. Whatever the underlying server/hosting provider does at the
+network level (e.g. a firewall's connection logs) is outside this
+application's control.
 
 ### What we don't do
 
@@ -77,10 +84,11 @@ remove them, so the flagging itself stays checkable by anyone).
 
 Because accounts are pseudonymous by design, we can't verify a deletion
 request against a name or email — we can verify it against control of
-the account's signing secret instead: contact `[CONTACT EMAIL]` with your
-account ID, and be ready to sign a challenge string we send you with that
-account's local secret to prove it's yours. `[This verification flow is
-not automated yet — until it is, deletion requests are handled manually.]`
+the account's signing secret instead: contact
+robin.steltmann@googlemail.com with your account ID, and be ready to sign
+a challenge string we send you with that account's local secret to prove
+it's yours. This verification flow is not automated yet — until it is,
+deletion requests are handled manually.
 
 ## Blind voting (planned, not active)
 
@@ -93,15 +101,32 @@ will be updated with specifics before that feature ships.
 
 Subject to verification as described above: access to what's stored
 under your account ID, correction, deletion, and objection to processing.
-`[Confirm the correct legal basis (likely legitimate interest / consent)
-and add your supervisory authority's contact per GDPR Art. 13 before
-publishing.]`
+
+Legal basis, as best assessed here — **not confirmed by a lawyer, and
+that confirmation should still happen before treating this as final**:
+run-result data is processed under legitimate interest (Art. 6(1)(f)
+GDPR) — measuring skill performance is the service itself, the data is
+pseudonymous, and a contributor can object per above. The opt-in
+plaintext-content upload is processed under consent (Art. 6(1)(a)), which
+is why it defaults off and can be withdrawn at any time. Admin-account
+data is processed to perform the admin's own catalog-curation role
+(Art. 6(1)(b)).
+
+If you're in the EU/EEA and think your rights haven't been respected, you
+can lodge a complaint with your local data protection supervisory
+authority. For Germany, that's the authority for the state (Bundesland)
+where the operator is based — `[name the specific Landesbeauftragte(r)
+für Datenschutz once confirmed; Breuna is in Hesse, so this is likely the
+Hessischer Beauftragter für Datenschutz und Informationsfreiheit, but
+verify rather than trust this draft on that point]`.
 
 ## Changes to this policy
 
-`[Describe how you'll notify contributors of material changes — e.g. a
-dated changelog on this page.]`
+Material changes will be reflected here with an updated "Last updated"
+date at the top of this page; no separate notification channel exists yet
+beyond checking back on this page.
 
 ## Contact
 
-`[CONTACT EMAIL]`
+robin.steltmann@googlemail.com — see also [IMPRESSUM.md](IMPRESSUM.md)
+for the full operator identification.

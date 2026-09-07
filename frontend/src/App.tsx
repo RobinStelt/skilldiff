@@ -9,6 +9,7 @@ import { AdminSkillsPage } from "./pages/AdminSkillsPage.js";
 import { AdminSkillEditPage } from "./pages/AdminSkillEditPage.js";
 import { PrivacyPage } from "./pages/PrivacyPage.js";
 import { TermsPage } from "./pages/TermsPage.js";
+import { ImpressumPage } from "./pages/ImpressumPage.js";
 import { SiteFooter } from "./components/SiteFooter.js";
 import { SiteHeader } from "./components/SiteHeader.js";
 
@@ -44,6 +45,7 @@ export function App({
           />
           <Route path="/privacy" element={<PrivacyPage />} />
           <Route path="/terms" element={<TermsPage />} />
+          <Route path="/impressum" element={<ImpressumPage />} />
         </Routes>
       </div>
       <SiteFooter />

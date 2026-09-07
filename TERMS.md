@@ -4,16 +4,18 @@
 does; have it reviewed before relying on it. Placeholders below are
 marked `[…]`.
 
-_Last updated: [DATE]. Operator: [NAME/ENTITY], [ADDRESS], [CONTACT EMAIL]._
+_Last updated: 2026-09-07. Operator: Robin Steltmann, Schulstraße 13,
+34479 Breuna, Germany, robin.steltmann@googlemail.com — see also
+[IMPRESSUM.md](IMPRESSUM.md)._
 
 ## What this is
 
 SkillDiff ("the Service") shows measured, aggregated
 comparisons of Claude Code skills — each based on a task run once with a
 skill loaded and once without, on a contributor's own machine. The
-`skill-ab` CLI (source: `[REPO URL]`, license: `[MIT/Apache — confirm]`)
-is what performs and uploads these comparisons; the website displays the
-aggregated results.
+`skill-ab` CLI (source: https://github.com/RobinStelt/skilldiff, license:
+MIT, see [`LICENSE`](LICENSE)) is what performs and uploads these
+comparisons; the website displays the aggregated results.
 
 ## Your responsibility for what you run the CLI against
 
@@ -60,8 +62,9 @@ determine was submitted in bad faith from public aggregates.
 Catalog information (name, description, license, maintainer, GitHub link)
 is curated by administrators for display purposes and is independent of —
 never influences, and is never influenced by — the measured comparison
-data. `[If you accept external submissions/corrections for catalog
-entries, describe that process here.]`
+data. External submissions or corrections aren't accepted through any
+automated process yet — reach out via the contact below and an admin
+applies the change by hand.
 
 ## Accounts
 
@@ -74,24 +77,38 @@ curation.
 ## Availability and changes
 
 The Service is provided on an as-is basis, may change or be discontinued,
-and we don't guarantee uptime. `[Add an SLA here only if you actually
-intend to offer one.]`
+and we don't guarantee uptime. No SLA is offered.
 
 ## Limitation of liability
 
-`[This section needs actual legal drafting for your jurisdiction — a
-placeholder limitation-of-liability clause copied from elsewhere is worse
-than none, since it can create false confidence. Have this written by
-someone qualified to do it for where you operate.]`
+**Draft, not verified by a lawyer — German law (§§ 305 ff. BGB) limits
+what a liability clause like this can actually disclaim, especially
+toward consumers, so treat the wording below as a starting point for
+real legal review, not a finished clause.** The Service is a free,
+independently-run measurement tool. To the extent legally permitted, the
+operator is liable only for damages caused intentionally or by gross
+negligence, and for the negligent breach of a material contractual
+obligation (Kardinalpflicht) — in the latter case limited to
+foreseeable, typical damage. Liability for injury to life, body, or
+health, and any liability under the Produkthaftungsgesetz, is unaffected
+and not limited by this clause.
 
 ## Governing law
 
-`[Fill in your jurisdiction once operator details are finalized.]`
+German law applies. `[The specific venue/Gerichtsstand clause is left out
+deliberately — for a consumer-facing service, German law restricts which
+venue clauses are even enforceable (§ 38 ZPO and consumer-protection
+rules), so picking one without legal advice risks writing an invalid
+clause into this document. Have a lawyer add this line once the rest of
+the Service's legal setup is reviewed.]`
 
 ## Changes to these terms
 
-`[Describe how you'll notify contributors of material changes.]`
+Material changes will be reflected here with an updated "Last updated"
+date at the top of this page; no separate notification channel exists yet
+beyond checking back on this page.
 
 ## Contact
 
-`[CONTACT EMAIL]`
+robin.steltmann@googlemail.com — see also [IMPRESSUM.md](IMPRESSUM.md)
+for the full operator identification.

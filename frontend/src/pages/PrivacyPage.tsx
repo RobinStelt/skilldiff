@@ -6,11 +6,13 @@ export function PrivacyPage() {
     <main className="legal-page">
       <p className="legal-page__draft-notice">
         <strong>Draft — not legal advice.</strong> This is a factual description of what the software actually does.
-        Before this goes live for real, have it reviewed — GDPR applies, and Germany's Telemediengesetz/DDG may
-        require an Impressum not included here. Placeholders are marked <code>[…]</code>.
+        Before this goes live for real, have it reviewed — GDPR applies, and Germany's Digitale-Dienste-Gesetz (DDG,
+        formerly TMG) requires an Impressum (operator identification), included separately at{" "}
+        <a href="/impressum">Impressum</a>. A few placeholders remain below, marked <code>[…]</code>.
       </p>
       <p className="legal-page__meta">
-        Last updated: [DATE]. Operator: [NAME/ENTITY], [ADDRESS], [CONTACT EMAIL].
+        Last updated: 2026-09-07. Operator: Robin Steltmann, Schulstraße 13, 34479 Breuna, Germany,
+        robin.steltmann@googlemail.com — see also <a href="/impressum">Impressum</a>.
       </p>
 
       <h1>Privacy Policy</h1>
@@ -71,9 +73,11 @@ export function PrivacyPage() {
 
       <h3>Server-side technical data</h3>
       <p>
-        The application itself does not log requests or IP addresses. Whatever infrastructure it runs on (a hosting
-        provider, a reverse proxy) likely keeps its own short-term connection/access logs as standard operational
-        practice, outside this application's control — [describe your hosting provider's logging here once deployed].
+        The application itself does not log requests or IP addresses. The production deployment sits behind a Caddy
+        reverse proxy; as configured, that proxy has no explicit logging directive for this site either, so no access
+        log is written there by default. If that configuration changes, this section needs updating first. Whatever
+        the underlying server/hosting provider does at the network level (e.g. a firewall's connection logs) is
+        outside this application's control.
       </p>
 
       <h3>What we don't do</h3>
@@ -92,10 +96,10 @@ export function PrivacyPage() {
       </p>
       <p>
         Because accounts are pseudonymous by design, we can't verify a deletion request against a name or email — we
-        can verify it against control of the account's signing secret instead: contact [CONTACT EMAIL] with your
-        account ID, and be ready to sign a challenge string we send you with that account's local secret to prove
-        it's yours. [This verification flow is not automated yet — until it is, deletion requests are handled
-        manually.]
+        can verify it against control of the account's signing secret instead: contact
+        robin.steltmann@googlemail.com with your account ID, and be ready to sign a challenge string we send you with
+        that account's local secret to prove it's yours. This verification flow is not automated yet — until it is,
+        deletion requests are handled manually.
       </p>
 
       <h2>Blind voting (planned, not active)</h2>
@@ -108,15 +112,34 @@ export function PrivacyPage() {
       <h2>Your rights (EU/GDPR, where applicable)</h2>
       <p>
         Subject to verification as described above: access to what's stored under your account ID, correction,
-        deletion, and objection to processing. [Confirm the correct legal basis (likely legitimate interest /
-        consent) and add your supervisory authority's contact per GDPR Art. 13 before publishing.]
+        deletion, and objection to processing.
+      </p>
+      <p>
+        Legal basis, as best assessed here — <strong>not confirmed by a lawyer, and that confirmation should still
+        happen before treating this as final</strong>: run-result data is processed under legitimate interest
+        (Art. 6(1)(f) GDPR) — measuring skill performance is the service itself, the data is pseudonymous, and a
+        contributor can object per above. The opt-in plaintext-content upload is processed under consent
+        (Art. 6(1)(a)), which is why it defaults off and can be withdrawn at any time. Admin-account data is
+        processed to perform the admin's own catalog-curation role (Art. 6(1)(b)).
+      </p>
+      <p>
+        If you're in the EU/EEA and think your rights haven't been respected, you can lodge a complaint with your
+        local data protection supervisory authority. For Germany, that's the authority for the state (Bundesland)
+        where the operator is based — likely the Hessischer Beauftragter für Datenschutz und Informationsfreiheit
+        (Breuna is in Hesse), but this hasn't been confirmed with them directly.
       </p>
 
       <h2>Changes to this policy</h2>
-      <p>[Describe how you'll notify contributors of material changes — e.g. a dated changelog on this page.]</p>
+      <p>
+        Material changes will be reflected here with an updated "Last updated" date at the top of this page; no
+        separate notification channel exists yet beyond checking back on this page.
+      </p>
 
       <h2>Contact</h2>
-      <p>[CONTACT EMAIL]</p>
+      <p>
+        robin.steltmann@googlemail.com — see also <a href="/impressum">Impressum</a> for the full operator
+        identification.
+      </p>
     </main>
   );
 }

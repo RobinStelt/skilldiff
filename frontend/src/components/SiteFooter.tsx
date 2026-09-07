@@ -17,6 +17,7 @@ export function SiteFooter() {
           </a>
           <Link to="/privacy">Privacy</Link>
           <Link to="/terms">Terms</Link>
+          <Link to="/impressum">Impressum</Link>
           <Link to="/admin/login">Admin</Link>
         </nav>
         <span>Built for curious developers.</span>
