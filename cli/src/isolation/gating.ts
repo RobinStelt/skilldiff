@@ -4,6 +4,7 @@ import { tmpdir, homedir } from "node:os";
 import { join } from "node:path";
 import type { Condition, LinkCapability } from "./types.js";
 import type { IsolationTier } from "@skilldiff/schema";
+import { toWindowsPath } from "./windowsPath.js";
 
 export interface IsolatedHome {
   path: string;
@@ -80,20 +81,6 @@ function removeLinkIfPresent(linkPath: string): void {
 
 function createSymlink(target: string, link: string): void {
   symlinkSync(target, link, "dir");
-}
-
-/**
- * Real, reproduced bug: `cmd.exe`'s `mklink` treats a forward slash
- * anywhere in its arguments as a switch prefix, not a path separator —
- * `mklink /J link C:\...\scratchpad/skills/foo` fails with "Ungültige
- * Option - "skills"" (invalid option), even though every other Windows
- * API on this codebase's path (Node's fs/path, `--skill-source` itself)
- * accepts forward slashes just fine. A `--skill-source`/`--dir` value
- * with forward slashes — common enough (a different shell, a script, or
- * just habit) — silently broke every Tier B `with_skill` run before this.
- */
-function toWindowsPath(value: string): string {
-  return value.replace(/\//g, "\\");
 }
 
 function createJunction(target: string, link: string): void {

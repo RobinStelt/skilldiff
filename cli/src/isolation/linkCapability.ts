@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { execFileSync } from "node:child_process";
 import type { LinkCapability } from "./types.js";
+import { toWindowsPath } from "./windowsPath.js";
 
 /**
  * Actually tests (instead of guessing) whether real symlinks work.
@@ -47,7 +48,7 @@ export function probeJunctionCapability(): boolean {
   const link = join(dir, "link");
   try {
     mkdirSync(target);
-    execFileSync("cmd.exe", ["/c", "mklink", "/J", link, target], {
+    execFileSync("cmd.exe", ["/c", "mklink", "/J", toWindowsPath(link), toWindowsPath(target)], {
       stdio: "ignore",
       windowsHide: true,
     });
