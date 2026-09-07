@@ -19,7 +19,7 @@ fi
 
 echo "==> Code klonen/aktualisieren..."
 if [ ! -d "/opt/skilldiff" ]; then
-  git clone https://github.com/RobinStelt/marketplace.git /opt/skilldiff
+  git clone https://github.com/RobinStelt/skilldiff.git /opt/skilldiff
 fi
 cd /opt/skilldiff
 git pull --ff-only
