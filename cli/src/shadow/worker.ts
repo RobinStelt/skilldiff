@@ -97,7 +97,21 @@ export async function runShadowWorker(sessionId: string): Promise<void> {
       });
     }
 
-    const claudeArgs = ["-p", state.task, "--output-format", "json", "--setting-sources", "project"];
+    // See commands/run.ts's identical addition for why: without this, a
+    // headless `claude -p` has no way to approve an Edit/Write tool call
+    // (no TTY to prompt), so every real task silently can't get done in
+    // either condition — safe here because `workDirCopy` is always this
+    // run's disposable copy, never the user's real project.
+    const claudeArgs = [
+      "-p",
+      state.task,
+      "--output-format",
+      "json",
+      "--setting-sources",
+      "project",
+      "--permission-mode",
+      "acceptEdits",
+    ];
     const invocation =
       tierResult.tier === "A"
         ? {

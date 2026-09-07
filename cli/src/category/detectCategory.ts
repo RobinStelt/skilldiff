@@ -4,6 +4,12 @@ import type { Category } from "@skilldiff/schema";
 
 const CODE_EXTENSIONS = new Set([
   ".ts", ".tsx", ".js", ".jsx", ".py", ".go", ".rs", ".java", ".kt", ".rb", ".php", ".c", ".cpp", ".cs",
+  // Real bug found running a real frontend-design comparison: a
+  // pure-HTML/CSS task directory has zero files in the list above, so
+  // detectCategory() fell through to "other" — the same bucket as an
+  // empty/unrecognizable directory — for exactly the kind of work
+  // "frontend-design" (a UI/visual-design skill) exists to help with.
+  ".html", ".htm", ".css", ".scss", ".sass", ".less", ".vue", ".svelte",
 ]);
 const DOCS_EXTENSIONS = new Set([".md", ".mdx", ".rst", ".adoc", ".txt"]);
 

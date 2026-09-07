@@ -46,6 +46,10 @@ program
     "Backend endpoint for the upload. Omit to use \"skill-ab config set endpoint\" (if set), or run against a local mock",
   )
   .option("--docker-image <image>", "Image for Tier A runs (must contain the claude CLI)")
+  .option(
+    "--no-docker",
+    "Skip Tier A even if Docker/Podman is running, falling back to Tier B/C — for a machine that runs Docker for unrelated reasons but has no skill-ab/claude-runner image or uses subscription (not API-key) auth",
+  )
   .action(async (opts) => {
     try {
       await runCommand({
@@ -57,6 +61,7 @@ program
         claudeBin: opts.claudeBin,
         endpointUrl: opts.endpoint,
         dockerImage: opts.dockerImage,
+        noDocker: opts.docker === false,
       });
     } catch (err) {
       console.error(pc.red("Error:"), err instanceof Error ? err.message : err);

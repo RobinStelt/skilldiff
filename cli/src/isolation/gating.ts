@@ -82,8 +82,22 @@ function createSymlink(target: string, link: string): void {
   symlinkSync(target, link, "dir");
 }
 
+/**
+ * Real, reproduced bug: `cmd.exe`'s `mklink` treats a forward slash
+ * anywhere in its arguments as a switch prefix, not a path separator —
+ * `mklink /J link C:\...\scratchpad/skills/foo` fails with "Ungültige
+ * Option - "skills"" (invalid option), even though every other Windows
+ * API on this codebase's path (Node's fs/path, `--skill-source` itself)
+ * accepts forward slashes just fine. A `--skill-source`/`--dir` value
+ * with forward slashes — common enough (a different shell, a script, or
+ * just habit) — silently broke every Tier B `with_skill` run before this.
+ */
+function toWindowsPath(value: string): string {
+  return value.replace(/\//g, "\\");
+}
+
 function createJunction(target: string, link: string): void {
-  execFileSync("cmd.exe", ["/c", "mklink", "/J", link, target], {
+  execFileSync("cmd.exe", ["/c", "mklink", "/J", toWindowsPath(link), toWindowsPath(target)], {
     stdio: "ignore",
     windowsHide: true,
   });

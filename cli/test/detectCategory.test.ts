@@ -42,6 +42,14 @@ describe("detectCategory", () => {
     expect(detectCategory({ task: "Build a new sorting function", workDir: codeDir })).toBe("feature");
   });
 
+  it("detects feature for a pure HTML/CSS project (real bug: these weren't counted as code)", () => {
+    const htmlDir = join(dir, "html-project");
+    mkdirSync(htmlDir, { recursive: true });
+    writeFileSync(join(htmlDir, "index.html"), "<html></html>");
+    writeFileSync(join(htmlDir, "style.css"), "body { margin: 0; }");
+    expect(detectCategory({ task: "Add a pricing page to this site", workDir: htmlDir })).toBe("feature");
+  });
+
   it("detects other for an empty directory without clear keywords", () => {
     const emptyDir = join(dir, "empty");
     mkdirSync(emptyDir, { recursive: true });

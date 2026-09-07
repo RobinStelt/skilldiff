@@ -93,4 +93,32 @@ describe("applyTierBGate", () => {
     applyTierBGate({ workDir, skillId: "skill-x", skillSourceDir: sourceDir, condition: "without_skill", linkCapability: cap });
     expect(existsSync(linkPath)).toBe(false);
   });
+
+  it("links correctly even when --skill-source used forward slashes (real bug: cmd.exe's mklink misreads them as switches)", () => {
+    const cap = detectLinkCapability();
+    if (!cap.symlink && !cap.junction) return;
+
+    workDir = mkdtempSync(join(tmpdir(), "skill-ab-gate-work-"));
+    sourceDir = mkdtempSync(join(tmpdir(), "skill-ab-gate-source-"));
+    writeFileSync(join(sourceDir, "SKILL.md"), "# Test");
+
+    // Reproduces a real failure found running an actual comparison:
+    // `--skill-source` given with forward slashes (common — a different
+    // shell, a script, plain habit) made Tier B's junction path
+    // (isolation/gating.ts's createJunction) fail outright on Windows,
+    // because `cmd.exe /c mklink /J link target` treats a bare "/" in
+    // `target` as a switch prefix, not a path separator.
+    const mixedSeparatorSource = sourceDir.replace(/\\/g, "/");
+
+    applyTierBGate({
+      workDir,
+      skillId: "skill-x",
+      skillSourceDir: mixedSeparatorSource,
+      condition: "with_skill",
+      linkCapability: cap,
+    });
+    const linkPath = join(workDir, ".claude", "skills", "skill-x");
+    expect(existsSync(linkPath)).toBe(true);
+    expect(readdirSync(linkPath)).toContain("SKILL.md");
+  });
 });

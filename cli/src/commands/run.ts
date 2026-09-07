@@ -31,6 +31,8 @@ export interface RunCommandOptions {
   endpointUrl?: string;
   dockerImage?: string;
   apiKeyEnvVar?: string;
+  /** See DetectIsolationTierOptions.skipContainer — forces Tier B/C even when Docker is running. */
+  noDocker?: boolean;
 }
 
 function parseCheckCommand(cmd?: string): { cmd: string; args: string[] } | null {
@@ -95,7 +97,7 @@ export async function runCommand(options: RunCommandOptions): Promise<void> {
   }
 
   // --- 2. Tiered control-run isolation: actually checked, not guessed ----
-  const tierResult = await detectIsolationTier();
+  const tierResult = await detectIsolationTier({ skipContainer: options.noDocker });
   console.log(pc.dim(`Isolation tier: ${tierResult.tier} (${tierResult.reason})`));
 
   if (tierRequiresOutsideSourceCheck(tierResult.tier) && skillSourceDir) {
@@ -104,7 +106,27 @@ export async function runCommand(options: RunCommandOptions): Promise<void> {
 
   // --- 1. Run orchestration: builds the right invocation per tier --------
   const buildInvocation = (condition: Condition, workDirCopy: string): Invocation => {
-    const claudeArgs = ["-p", options.task, "--output-format", "json", "--setting-sources", "project"];
+    // --permission-mode acceptEdits: real, previously-undiscovered bug —
+    // without it, `claude -p` in a non-interactive/headless run has no
+    // way to approve a file edit (no TTY to prompt), so every Edit/Write
+    // tool call is silently denied and the task can never actually get
+    // done regardless of whether the skill helps. Found running this for
+    // real (playwright-skill both conditions "failed" identically —
+    // turned out Claude correctly identified the fix in both but every
+    // Edit call was denied). Safe here specifically because `workDirCopy`
+    // is always a disposable copy (orchestration/runOrchestrator.ts) or a
+    // container mount, never the user's real project — the whole reason
+    // that copy exists is so Claude can act freely on it.
+    const claudeArgs = [
+      "-p",
+      options.task,
+      "--output-format",
+      "json",
+      "--setting-sources",
+      "project",
+      "--permission-mode",
+      "acceptEdits",
+    ];
 
     if (tierResult.tier === "A") {
       // Tier A is built as a docker/podman wrapper around the same claude call.
