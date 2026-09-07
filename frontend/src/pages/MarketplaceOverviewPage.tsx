@@ -123,7 +123,7 @@ export function MarketplaceOverviewPage({ apiClient }: { apiClient: MarketplaceA
                         title="GitHub repository stars (not a performance score)"
                       >
                         {" "}
-                        ★ {skill.metadata.githubStars.toLocaleString()}
+                        ★ {skill.metadata.githubStars.toLocaleString("en-US")}
                       </span>
                     )}
                   </span>

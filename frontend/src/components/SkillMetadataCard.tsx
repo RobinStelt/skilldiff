@@ -37,7 +37,7 @@ export function SkillMetadataCard({ metadata }: { metadata: SkillMetadata | null
             <span
               className="skill-metadata__stars"
               title="GitHub repository stars (not a performance score)"
-            >{`★ ${metadata.githubStars.toLocaleString()} GitHub stars`}</span>
+            >{`★ ${metadata.githubStars.toLocaleString("en-US")} GitHub stars`}</span>
           </li>
         )}
         {metadata.maintainer && (

@@ -43,7 +43,7 @@ export function AdminSkillsPage({ adminApiClient }: { adminApiClient: AdminApiCl
               <Link to={`/admin/skills/${encodeURIComponent(skill.skillId)}`}>{skill.name}</Link>{" "}
               {skill.githubStars !== null && (
                 <span className="skill-metadata__stars" title="GitHub repository stars">
-                  ★ {skill.githubStars.toLocaleString()}
+                  ★ {skill.githubStars.toLocaleString("en-US")}
                 </span>
               )}
               <span className="skill-list__technical-id">{skill.skillId}</span>
