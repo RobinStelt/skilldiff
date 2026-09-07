@@ -1,29 +1,42 @@
 {
   "name": "skill-ab",
   "version": "0.1.0",
-  "private": true,
-  "description": "CLI core of SkillDiff: runs a task with and without a skill, measures automatically, and force-uploads the result as a pair (Phase 2 from skill-ab-marktplatz-plan.md).",
+  "description": "CLI that runs a task once with a Claude Code skill loaded and once without, measures the difference automatically, and can upload the paired result to a SkillDiff marketplace.",
   "type": "module",
+  "license": "MIT",
+  "author": "Robin Steltmann",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/RobinStelt/skilldiff.git",
+    "directory": "cli"
+  },
+  "homepage": "https://skilldiff.robin-steltmann.de",
+  "bugs": "https://github.com/RobinStelt/skilldiff/issues",
   "bin": {
-    "skill-ab": "./dist/index.js"
+    "skill-ab": "dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "node build.mjs",
     "dev": "tsx src/index.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
-  "dependencies": {
-    "@skilldiff/schema": "file:../schema",
-    "commander": "^12.1.0",
-    "picocolors": "^1.0.1",
-    "prompts": "^2.4.2"
-  },
   "devDependencies": {
+    "@skilldiff/schema": "file:../schema",
     "@types/node": "^20.14.15",
     "@types/prompts": "^2.4.9",
-    "typescript": "^5.5.4",
+    "commander": "^12.1.0",
+    "esbuild": "^0.28.2",
+    "picocolors": "^1.0.1",
+    "prompts": "^2.4.2",
     "tsx": "^4.16.2",
+    "typescript": "^5.5.4",
     "vitest": "^2.0.5"
   }
 }

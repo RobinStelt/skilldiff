@@ -1,14 +1,15 @@
 # Getting started — try the CLI yourself
 
-Not published to npm yet (no `npm publish` credentials on this side, and no
-public registry name reserved) — this walks through it straight from a
-git clone. Every command below was actually run once, in order, on a clean
-checkout, to make sure this really works end to end (see the note at the
-bottom for the one platform-specific gotcha found while doing that).
+> **Status:** `cli/` is built and packaged for `npm install -g skill-ab`
+> (bundled, verified with a real `npm pack` + isolated install — see
+> `cli/build.mjs`) but not yet actually published to the registry, which
+> needs someone with npm publish rights to run `npm publish` from `cli/`
+> once, by hand. Until that happens, use the "Building from source"
+> fallback below step 1.
 
 ## Prerequisites
 
-- **Node.js 20+** and **git**.
+- **Node.js 20+**.
 - **[Claude Code](https://claude.com/claude-code)** installed and logged in
   — either a Pro/Max subscription login (`claude` with no
   `ANTHROPIC_API_KEY` set) or an API key. Either works; a subscription
@@ -17,25 +18,10 @@ bottom for the one platform-specific gotcha found while doing that).
   `cli/README.md`) — the CLI auto-detects what's available and falls back
   gracefully (`cli/README.md`, "Isolation tiers").
 
-## 1. Clone and build the two packages the CLI needs
+## 1. Install `skill-ab`
 
 ```bash
-git clone <this-repo-url> skilldiff
-cd skilldiff
-
-# @skilldiff/schema first — the CLI depends on its BUILT output, not its
-# source (see the "Fix: real build output..." commit if you're curious why
-# that distinction matters here).
-cd schema && npm install && npm run build && cd ..
-
-cd cli && npm install && npm run build && cd ..
-```
-
-## 2. Make `skill-ab` a real command on your machine
-
-```bash
-cd cli
-npm link
+npm install -g skill-ab
 ```
 
 Verify it worked:
@@ -44,13 +30,32 @@ Verify it worked:
 skill-ab --version
 ```
 
-If that prints `0.1.0`, you're set. If you get a "command not found" (or,
-on Windows, an `ERR_MODULE_NOT_FOUND`/`ENOENT` error), see the
-troubleshooting note at the bottom before anything else — both are known,
-already-fixed classes of bugs, so make sure `git pull` actually got the
-fix.
+That should print the current version. `cli/package.json` bundles every
+dependency (including its internal `@skilldiff/schema` contract package)
+into one file at publish time, so this is a single, self-contained
+install — nothing else to build.
 
-## 3. Try it once, locally, with no upload
+<details>
+<summary>Building from source instead (working on the CLI itself, or the
+published package isn't available yet)</summary>
+
+```bash
+git clone https://github.com/RobinStelt/skilldiff.git
+cd skilldiff
+
+cd cli && npm install && npm run build && npm link && cd ..
+```
+
+`npm run build` (`cli/build.mjs`) bundles `src/index.ts` with esbuild —
+the same thing `npm publish` runs — so `npm link` here exercises the exact
+artifact real installs get, not a different dev-only build. If
+`skill-ab --version` then fails with a "command not found" (or, on
+Windows, a `spawn ... ENOENT`/`EINVAL` error), see the troubleshooting
+note at the bottom before anything else — a known, already-fixed class of
+bug, so make sure `git pull` actually got the fix.
+</details>
+
+## 2. Try it once, locally, with no upload
 
 No `--endpoint` means the result is written to a local file
 (`.skill-ab-mock-uploads/`) instead of sent anywhere — good for a first
@@ -83,17 +88,19 @@ The very first `run` shows a one-time consent screen (nothing is uploaded
 without saying yes there — cli/README.md, "Usage"). You'll see a real,
 local delta either way.
 
-## 4. Contribute to a real backend
+## 3. Contribute to a real backend
 
 ```bash
-skill-ab run --dir <your-real-project> --task "<a task you're about to do anyway>" \
-  --endpoint http://<the-backend-url>/v1/run-results
+skill-ab config set endpoint https://skilldiff.robin-steltmann.de/v1/run-results
+skill-ab run --dir <your-real-project> --task "<a task you're about to do anyway>"
 ```
 
-Point `--endpoint` at whichever backend instance you're contributing to —
-your own (`backend/README.md` for running one locally or via
-`docker compose up` at the repo root) or a shared one someone gave you the
-URL for. The account/signing-secret step
+`config set endpoint` persists it (`~/.skill-ab/config.json`) so you don't
+repeat `--endpoint` on every run — or pass `--endpoint <url>` once instead
+if you'd rather not persist it. Point it at the public instance above, at
+your own (`backend/README.md` for running one locally, or
+`docker/DEPLOY.md` for a real deployment), or at a shared one someone gave
+you the URL for. The account/signing-secret step
 (`cli/src/accounts/accountStore.ts` on the backend side) happens
 automatically; nothing extra to set up by hand.
 
@@ -106,12 +113,10 @@ automatically; nothing extra to set up by hand.
 
 ## Troubleshooting — the one real gotcha found while testing this guide
 
-**Windows only:** `npm link` creates `skill-ab`/`skill-ab.cmd` shims. If
-`skill-ab --version` fails with `ERR_MODULE_NOT_FOUND` pointing at
-`schema/src/...`, your `schema/` build is stale or missing — rerun step 1.
-If it fails with a raw `spawn ... ENOENT`/`EINVAL` instead, that's
-`cli/src/isolation/claudeBinary.ts`'s territory (Node's `spawn` can't
-resolve an npm `.cmd` shim without a shell) — it auto-detects a real
-`claude.exe` from a Claude Desktop install; if you don't have Claude
-Desktop, pass `--claude-bin` explicitly to wherever your `claude` install
-actually lives.
+**Windows only, building from source:** `npm link` creates
+`skill-ab`/`skill-ab.cmd` shims. If `skill-ab --version` fails with a raw
+`spawn ... ENOENT`/`EINVAL`, that's `cli/src/isolation/claudeBinary.ts`'s
+territory (Node's `spawn` can't resolve an npm `.cmd` shim without a
+shell) — it auto-detects a real `claude.exe` from a Claude Desktop
+install; if you don't have Claude Desktop, pass `--claude-bin` explicitly
+to wherever your `claude` install actually lives.
