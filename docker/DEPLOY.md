@@ -85,8 +85,8 @@ calls. Both are served by the same backend container; everything else
 ## Backups
 
 The `backup` service (`../docker-compose.prod.yml`, `../scripts/backup.sh`)
-runs a nightly `pg_dump` of the `marktplatz` database into the
-`marktplatz-backups` volume, keeping the last 7 daily + 4 weekly dumps —
+runs a nightly `pg_dump` of the `skilldiff` database into the
+`skilldiff-backups` volume, keeping the last 7 daily + 4 weekly dumps —
 same rotation scheme as the sibling plantwiz deployment's own backup
 service, adapted from `mysqldump` to `pg_dump`. Verified for real (not
 just read): dumped a seeded table with `backup.sh`, restored it into a

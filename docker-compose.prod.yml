@@ -23,9 +23,9 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD}
-      POSTGRES_DB: marktplatz
+      POSTGRES_DB: skilldiff
     volumes:
-      - marktplatz-postgres-prod:/var/lib/postgresql/data
+      - skilldiff-postgres-prod:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 2s
@@ -41,7 +41,7 @@ services:
     working_dir: /repo/backend
     command: ["npx", "tsx", "scripts/migrate.ts"]
     environment:
-      MIGRATION_DATABASE_URL: postgres://postgres:${POSTGRES_SUPERUSER_PASSWORD}@postgres:5432/marktplatz
+      MIGRATION_DATABASE_URL: postgres://postgres:${POSTGRES_SUPERUSER_PASSWORD}@postgres:5432/skilldiff
       APP_BACKEND_ROLE_PASSWORD: ${APP_BACKEND_ROLE_PASSWORD}
       CONTENT_WRITER_ROLE_PASSWORD: ${CONTENT_WRITER_ROLE_PASSWORD}
       BLINDVOTING_ROLE_PASSWORD: ${BLINDVOTING_ROLE_PASSWORD}
@@ -56,8 +56,8 @@ services:
     container_name: marketplace-backend
     restart: unless-stopped
     environment:
-      APP_DATABASE_URL: postgres://app_backend:${APP_BACKEND_ROLE_PASSWORD}@postgres:5432/marktplatz
-      CONTENT_WRITER_DATABASE_URL: postgres://content_writer:${CONTENT_WRITER_ROLE_PASSWORD}@postgres:5432/marktplatz
+      APP_DATABASE_URL: postgres://app_backend:${APP_BACKEND_ROLE_PASSWORD}@postgres:5432/skilldiff
+      CONTENT_WRITER_DATABASE_URL: postgres://content_writer:${CONTENT_WRITER_ROLE_PASSWORD}@postgres:5432/skilldiff
       PORT: "3000"
       TRUSTED_CLI_BUILD_HASHES: ${TRUSTED_CLI_BUILD_HASHES:-}
       AGGREGATION_SOURCE_URL: https://github.com/RobinStelt/skilldiff/tree/master/backend/src/aggregation
@@ -68,7 +68,7 @@ services:
       - default
       - plantwiz-shared
 
-  # Nightly pg_dump of the marktplatz database, with rotation — see
+  # Nightly pg_dump of the skilldiff database, with rotation — see
   # scripts/backup.sh. No prod deployment had this before; contributor
   # upload data (run_results, run_result_content) living only in one
   # unbacked-up volume was a real loss risk.
@@ -79,14 +79,14 @@ services:
     environment:
       DB_HOST: postgres
       DB_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD}
-      DB_NAME: marktplatz
+      DB_NAME: skilldiff
       BACKUP_HOUR: "3" # UTC
       DAILY_KEEP: "7"
       WEEKLY_KEEP: "4"
     volumes:
       - ./scripts/backup.sh:/usr/local/bin/backup.sh:ro
       - ./scripts/restore.sh:/usr/local/bin/restore.sh:ro
-      - marktplatz-backups:/backups
+      - skilldiff-backups:/backups
     depends_on:
       postgres:
         condition: service_healthy
@@ -108,8 +108,8 @@ services:
       - plantwiz-shared
 
 volumes:
-  marktplatz-postgres-prod:
-  marktplatz-backups:
+  skilldiff-postgres-prod:
+  skilldiff-backups:
 
 networks:
   plantwiz-shared:
