@@ -100,6 +100,17 @@ export const categoryMetricsDocsSchema = pairSchema(docsMetricsSchema);
 
 const sharedFields = {
   skill_id: z.string().min(1),
+  /**
+   * sha256 (hex) over the skill source directory's file paths + contents at
+   * run time (cli/src/skill/contentHash.ts) — a self-maintaining stand-in
+   * for a version number, since skill authors can't be relied on to bump
+   * one. Without this, two measurements under the same `skill_id` are
+   * silently assumed to be the same skill even after its content changed,
+   * which would quietly corrupt aggregation. Lets the backend at least
+   * detect (not yet split aggregation by) content drift within a skill_id
+   * — see `SkillCategoryMetrics.distinctContentHashCount`.
+   */
+  skill_content_hash: z.string().length(64),
   account_id: z.string().min(1),
   signature: z.string().min(1),
 

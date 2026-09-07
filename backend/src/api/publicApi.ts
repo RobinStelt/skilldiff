@@ -1,6 +1,6 @@
 import type { Pool } from "pg";
-import type { Category } from "@marktplatz/schema";
-import { fetchStoredRunResults, listSkillCategoryPairs, listSkillSummaries } from "../aggregation/repo.js";
+import type { Category } from "@skilldiff/schema";
+import { fetchStoredRunResults, listSkillCategoryPairs } from "../aggregation/repo.js";
 import { aggregateSkillCategory } from "../aggregation/metrics.js";
 import type { SkillMetadataStore } from "../admin/skillMetadataStore.js";
 
@@ -54,7 +54,36 @@ export async function listSkills(
   skillMetadataStore: SkillMetadataStore,
   options: { category?: Category; cursor?: string | null },
 ): Promise<SkillListResponse> {
-  const { skills, nextCursor } = await listSkillSummaries(appPool, options);
+  // Catalog visibility is independent of measurement aggregation. Category
+  // filters still refer exclusively to measured task categories.
+  const { rows: ids } = await appPool.query(
+    `WITH visible_skills AS (
+       SELECT skill_id FROM run_results WHERE ($1::text IS NULL OR category = $1)
+       UNION
+       SELECT skill_id FROM skill_metadata WHERE $1::text IS NULL
+     )
+     SELECT skill_id FROM visible_skills
+     WHERE ($2::text IS NULL OR skill_id > $2)
+     ORDER BY skill_id LIMIT 21`,
+    [options.category ?? null, options.cursor ?? null],
+  );
+  const page: string[] = ids.slice(0, 20).map((row) => row.skill_id as string);
+  const nextCursor = ids.length > 20 ? page[page.length - 1]! : null;
+  if (page.length === 0) return { skills: [], nextCursor: null };
+  const { rows } = await appPool.query(
+    `SELECT skill_id, category, COUNT(*) AS sample_size FROM run_results
+     WHERE skill_id = ANY($1::text[]) GROUP BY skill_id, category ORDER BY skill_id, category`,
+    [page],
+  );
+  const skills = page.map((skillId) => ({
+    skillId,
+    categories: rows
+      .filter((row) => row.skill_id === skillId)
+      .map((row) => ({
+        category: row.category as Category,
+        sampleSize: Number(row.sample_size),
+      })),
+  }));
   const getMetadata = toPublicMetadata(skillMetadataStore);
   const withMetadata = await Promise.all(
     skills.map(async (skill) => ({ ...skill, metadata: await getMetadata(skill.skillId) })),
@@ -76,14 +105,14 @@ export async function getSkillDetail(
   aggregationSourceUrl: string,
 ): Promise<SkillDetailResponse | null> {
   const pairs = await listSkillCategoryPairs(appPool, skillId);
-  if (pairs.length === 0) return null;
+  const metadata = await toPublicMetadata(skillMetadataStore)(skillId);
+  if (pairs.length === 0 && !metadata) return null;
 
   const categories = [];
   for (const pair of pairs) {
     const records = await fetchStoredRunResults(appPool, pair.skillId, pair.category);
     categories.push(aggregateSkillCategory(pair.skillId, pair.category, records));
   }
-  const metadata = await toPublicMetadata(skillMetadataStore)(skillId);
   return { skillId, categories, aggregationSourceUrl, metadata };
 }
 

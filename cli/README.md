@@ -37,10 +37,33 @@ npm run dev -- watch add --skill ponytail --source /path/to/ponytail-skill
 npm run dev -- watch list
 npm run dev -- watch remove --skill ponytail
 
+# or: watch everything at once instead of one at a time — every skill
+# that is BOTH installed locally (.claude/skills/<id>/) AND already in
+# your marketplace catalog. Also drops watched skills you've uninstalled,
+# and warns (without silently mixing data) when a watched skill's content
+# changed since the last sync — see "Skill versioning" below.
+npm run dev -- watch sync --endpoint <url>
+
 # from then on, --skill/--skill-source can be omitted — `run` picks ONE
 # watched skill at random per invocation:
 npm run dev -- run --dir <working-directory> --task "<task description>"
 ```
+
+#### Skill versioning
+
+`skill_id` alone never changes when a skill's author updates its content —
+so without something extra, two measurements under the same `skill_id`
+would silently be treated as the same skill even after it changed,
+corrupting aggregation. Every `RunResult` therefore also carries
+`skill_content_hash` (`src/skill/contentHash.ts`): a sha256 over the skill
+source directory's file paths and contents, computed fresh at every real
+`run`/shadow measurement — not a version number a skill author has to
+remember to bump. The backend tracks how many distinct hashes contributed
+to a skill+category slice (`distinctContentHashCount`) as a transparency
+signal; it does not (yet) split aggregation by hash, see migration `004`'s
+comment for why. `watch sync` uses the same hash to detect and warn about
+drift in an already-watched skill, instead of measuring a changed skill
+under its old identity without telling you.
 
 `--check` can also be omitted — `detectCheckCommand` (`src/category/`)
 looks for a real `npm test` script, a pytest project (`pyproject.toml`,
@@ -68,7 +91,7 @@ silently do nothing, by design (see below):
    exists there (a background hook process has no terminal to show a
    prompt on). Shadow mode checks `standardConsentGiven` before ever
    arming and simply refuses otherwise; it does not and cannot ask.
-2. **Register at least one skill:** `skill-ab watch add --skill <id> --source <path>`.
+2. **Register at least one skill:** `skill-ab watch add --skill <id> --source <path>`, or `skill-ab watch sync` to watch everything at once (see "Watching skills" above).
 3. **Persist where uploads go**, so a hook process spawned by Claude Code
    days from now still knows: `skill-ab config set endpoint <url>`
    (`skill-ab config show` to check, `config unset endpoint` to clear —
@@ -175,18 +198,21 @@ npm run typecheck
 npm test
 ```
 
-87 tests (vitest) cover: randomization, category/size-bucket/check-command
+97 tests (vitest) cover: randomization, category/size-bucket/check-command
 detection, readability/complexity heuristics, security-delta rules, the
-link capability test, `RunResult` assembly **validated against the real
-schema package**, mock upload (including rejecting invalid payloads before
-any write/send), watched-skill persistence, local config persistence
-(including loading a config.json written before the `watchedSkills` field
-existed), persisted `config set/unset` (endpoint/claude-bin) across
-reloads, shadow-mode hook install/uninstall (`.claude/settings.json`
-merging, never disturbing unrelated entries), the UserPromptSubmit/Stop
-decision logic (including refusing to arm without consent — a real gap
-found and closed: a background hook has no TTY to show the consent screen
-on, so it must check the decision, never ask for it), and transcript-usage
+link capability test, skill content hashing (determinism, order-independence,
+change-detection — `skill/contentHash.ts`), `watch sync`'s reconciliation
+logic (`config/watchSyncDecision.ts`), `RunResult` assembly **validated
+against the real schema package**, mock upload (including rejecting invalid
+payloads before any write/send), watched-skill persistence, local config
+persistence (including loading a config.json written before the
+`watchedSkills` field existed), persisted `config set/unset`
+(endpoint/claude-bin) across reloads, shadow-mode hook install/uninstall
+(`.claude/settings.json` merging, never disturbing unrelated entries), the
+UserPromptSubmit/Stop decision logic (including refusing to arm without
+consent — a real gap found and closed: a background hook has no TTY to show
+the consent screen on, so it must check the decision, never ask for it), and
+transcript-usage
 parsing (including the "can't measure, don't fake zero" fallback). Real `claude` calls go through an
 injectable `ProcessRunner` interface and are replaced by fakes in tests
 — a real end-to-end run was verified once manually against the local

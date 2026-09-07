@@ -1,7 +1,7 @@
 import { mkdtempSync, cpSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { IsolationTier, RunOutcome } from "@marktplatz/schema";
+import type { IsolationTier, RunOutcome } from "@skilldiff/schema";
 import type { LinkCapability, Condition } from "../isolation/types.js";
 import { applyTierBGate, createIsolatedHome } from "../isolation/gating.js";
 import { runCondition } from "./runCondition.js";

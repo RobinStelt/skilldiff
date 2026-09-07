@@ -1,6 +1,6 @@
 import { readdirSync, statSync } from "node:fs";
 import { join, extname } from "node:path";
-import type { Category } from "@marktplatz/schema";
+import type { Category } from "@skilldiff/schema";
 
 const CODE_EXTENSIONS = new Set([
   ".ts", ".tsx", ".js", ".jsx", ".py", ".go", ".rs", ".java", ".kt", ".rb", ".php", ".c", ".cpp", ".cs",

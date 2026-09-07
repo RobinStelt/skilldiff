@@ -16,6 +16,7 @@ export interface AdminSkillInput {
   license?: string | null;
   maintainer?: string | null;
   declaredCategory?: string | null;
+  githubStars?: number | null;
 }
 
 export interface AdminApiClient {
@@ -74,13 +75,18 @@ export function createAdminApiClient(baseUrl: string): AdminApiClient {
         headers: { "content-type": "application/json" },
         body: JSON.stringify(input),
       });
-      if (!response.ok) throw new Error("Failed to save skill");
+      if (!response.ok) {
+        const error = (await response.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(error?.error ?? "Failed to save skill");
+      }
       const body = (await response.json()) as { skill: AdminSkillRecord };
       return body.skill;
     },
 
     async deleteSkill(skillId) {
-      const response = await request(`/api/admin/skills/${encodeURIComponent(skillId)}`, { method: "DELETE" });
+      const response = await request(`/api/admin/skills/${encodeURIComponent(skillId)}`, {
+        method: "DELETE",
+      });
       if (!response.ok) throw new Error("Failed to delete skill");
     },
   };

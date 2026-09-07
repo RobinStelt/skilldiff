@@ -21,6 +21,22 @@ package (no live backend needed to run `npm test`).
 
 ## Running
 
+The home route combines the Skilldiff landing page with the live skill catalog.
+`/#explore` links to the category filters and skill cards; `/#how-it-works`
+explains the paired-run methodology. The CLI section links to the source
+installation guide and copies a command that works after that setup. Shared
+navigation and the dark theme also cover the existing detail and legal routes.
+If the backend is unavailable, the catalog shows a retry action while the
+landing content remains available; no fixture data is substituted.
+
+The visual identity uses graphite, acid yellow-green, a custom split-path mark,
+and locally served Space Grotesk (license in `public/fonts/`). The two original
+background/editorial images in `public/images/` are optimized WebP assets;
+`public/images/README.md` records their generation prompts and provenance.
+The A/B diagram and metric graphics are semantic interface illustrations,
+not sample measurements. Responsive layouts and reduced-motion preferences
+are handled in `src/landing.css`.
+
 ```bash
 npm install
 cp .env.example .env   # point VITE_BACKEND_URL at your backend if not localhost:3000
@@ -35,14 +51,23 @@ Node needed): `docker compose up --build` at the repo root.
 ## Admin (not from any briefing — catalog metadata, not aggregation)
 
 `/admin/login` → `/admin/skills` → `/admin/skills/:skillId` lets a logged-in
-admin attach display metadata (name, description, GitHub link, license,
-maintainer, catalog category) to a `skill_id` — purely descriptive, never
+admin edit display metadata (name, description, GitHub link, GitHub stars,
+license, maintainer, catalog category) for a `skill_id` — purely descriptive, never
 fed into the measured deltas (`backend/db/migrations/003_admin_and_skill_metadata.sql`).
 Create the first admin with `backend/scripts/create-admin.ts`; there's no
 self-registration. `SkillMetadataCard` renders this on the public skill
 detail page and in the overview list (GitHub ★ count included, refreshed
-periodically by `backend/scripts/refresh-github-stars.ts`, not fetched
-live per page view).
+by `backend/scripts/refresh-github-stars.ts` when that job is run, not fetched
+live per page view). Unknown star counts remain blank; zero is a valid count.
+Changing the repository in the editor clears the previous count. Scheduled
+refreshes may replace a manually entered count.
+
+The footer includes an Admin link. Local API addresses use the same loopback
+hostname as the page, so a `127.0.0.1` preview can use the cookie-based login
+even when `VITE_BACKEND_URL` was configured as `localhost`.
+
+Catalogued skills also appear before any runs exist. They show "No comparisons
+yet"; measured-category filters and metrics remain based exclusively on runs.
 
 ## How each acceptance criterion is met
 

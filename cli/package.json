@@ -2,7 +2,7 @@
   "name": "skill-ab",
   "version": "0.1.0",
   "private": true,
-  "description": "CLI core of the Skill-A/B Marketplace: runs a task with and without a skill, measures automatically, and force-uploads the result as a pair (Phase 2 from skill-ab-marktplatz-plan.md).",
+  "description": "CLI core of SkillDiff: runs a task with and without a skill, measures automatically, and force-uploads the result as a pair (Phase 2 from skill-ab-marktplatz-plan.md).",
   "type": "module",
   "bin": {
     "skill-ab": "./dist/index.js"
@@ -14,7 +14,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@marktplatz/schema": "file:../schema",
+    "@skilldiff/schema": "file:../schema",
     "commander": "^12.1.0",
     "picocolors": "^1.0.1",
     "prompts": "^2.4.2"

@@ -16,7 +16,9 @@ export function SkillMetadataCard({ metadata }: { metadata: SkillMetadata | null
     );
   }
 
-  const repoLabel = metadata.githubUrl ? metadata.githubUrl.replace(/^https?:\/\/(www\.)?github\.com\//i, "") : null;
+  const repoLabel = metadata.githubUrl
+    ? metadata.githubUrl.replace(/^https?:\/\/(www\.)?github\.com\//i, "")
+    : null;
 
   return (
     <div className="skill-metadata">
@@ -28,9 +30,14 @@ export function SkillMetadataCard({ metadata }: { metadata: SkillMetadata | null
             <a href={metadata.githubUrl} target="_blank" rel="noreferrer">
               {repoLabel}
             </a>
-            {metadata.githubStars !== null && (
-              <span className="skill-metadata__stars" title="GitHub stars">{` ★ ${metadata.githubStars.toLocaleString()}`}</span>
-            )}
+          </li>
+        )}
+        {metadata.githubStars !== null && (
+          <li>
+            <span
+              className="skill-metadata__stars"
+              title="GitHub repository stars (not a performance score)"
+            >{`★ ${metadata.githubStars.toLocaleString()} GitHub stars`}</span>
           </li>
         )}
         {metadata.maintainer && (

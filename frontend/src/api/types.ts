@@ -1,4 +1,4 @@
-import type { Category, IsolationTier } from "@marktplatz/schema";
+import type { Category, IsolationTier } from "@skilldiff/schema";
 
 /**
  * API contract this frontend is built against. The backend (Phase 3) does
@@ -40,6 +40,15 @@ export interface SkillCategoryDetail {
   distinctAccountCount: number;
   /** True when most of this category's sample came from Phase 6 seed data, not organic community runs. */
   seedDataMajority: boolean;
+  /**
+   * How many distinct skill-content versions (`skill_content_hash`)
+   * contributed to this slice — 1 means every measurement really was the
+   * same skill content; >1 means results from at least two different
+   * versions of the skill were aggregated together. Not yet surfaced in
+   * the UI — a transparency field kept in sync with the backend contract
+   * (`backend/src/aggregation/metrics.ts`), same as the rest of this type.
+   */
+  distinctContentHashCount: number;
   /** Points at the raw, unaggregated records backing this exact category slice (briefing point 6). */
   exportUrl: string;
 }

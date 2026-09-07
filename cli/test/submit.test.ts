@@ -7,6 +7,7 @@ import { buildRunResult } from "../src/buildRunResult.js";
 
 const validRunResult = buildRunResult({
   skillId: "skill_test",
+  skillContentHash: "a".repeat(64),
   accountId: "acct_test",
   signingSecret: "secret",
   category: "other",

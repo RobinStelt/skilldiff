@@ -9,6 +9,7 @@ const EMPTY_FORM: AdminSkillInput = {
   license: "",
   maintainer: "",
   declaredCategory: "",
+  githubStars: null,
 };
 
 export function AdminSkillEditPage({ adminApiClient }: { adminApiClient: AdminApiClient }) {
@@ -22,6 +23,9 @@ export function AdminSkillEditPage({ adminApiClient }: { adminApiClient: AdminAp
   useEffect(() => {
     if (!skillId) return;
     let cancelled = false;
+    setLoaded(false);
+    setForm(EMPTY_FORM);
+    setError(null);
     adminApiClient
       .listSkills()
       .then((skills) => {
@@ -35,11 +39,14 @@ export function AdminSkillEditPage({ adminApiClient }: { adminApiClient: AdminAp
             license: existing.license ?? "",
             maintainer: existing.maintainer ?? "",
             declaredCategory: existing.declaredCategory ?? "",
+            githubStars: existing.githubStars,
           });
         }
         setLoaded(true);
       })
-      .catch(() => navigate("/admin/login"));
+      .catch(() => {
+        if (!cancelled) navigate("/admin/login");
+      });
     return () => {
       cancelled = true;
     };
@@ -89,18 +96,40 @@ export function AdminSkillEditPage({ adminApiClient }: { adminApiClient: AdminAp
         <label>
           GitHub URL
           <input
+            type="url"
             value={form.githubUrl ?? ""}
-            onChange={(e) => setForm({ ...form, githubUrl: e.target.value })}
+            onChange={(e) => setForm({ ...form, githubUrl: e.target.value, githubStars: null })}
             placeholder="https://github.com/owner/repo"
           />
         </label>
+        <label>
+          GitHub stars
+          <input
+            type="number"
+            min="0"
+            max="2147483647"
+            step="1"
+            value={form.githubStars ?? ""}
+            onChange={(event) =>
+              setForm({ ...form, githubStars: event.target.value === "" ? null : event.target.valueAsNumber })
+            }
+            aria-describedby="github-stars-help"
+          />
+        </label>
+        <p id="github-stars-help" className="admin-form__help">
+          Leave blank if unknown. A scheduled GitHub refresh may update this count. Repository stars are not a
+          skill performance score.
+        </p>
         <label>
           License
           <input value={form.license ?? ""} onChange={(e) => setForm({ ...form, license: e.target.value })} />
         </label>
         <label>
           Maintainer
-          <input value={form.maintainer ?? ""} onChange={(e) => setForm({ ...form, maintainer: e.target.value })} />
+          <input
+            value={form.maintainer ?? ""}
+            onChange={(e) => setForm({ ...form, maintainer: e.target.value })}
+          />
         </label>
         <label>
           Category (catalog/browse only — never affects measured deltas)

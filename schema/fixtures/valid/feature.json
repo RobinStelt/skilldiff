@@ -1,16 +1,33 @@
 {
   "skill_id": "skill_api_scaffolder",
+  "skill_content_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
   "account_id": "acct_5b7d21",
   "signature": "e21a...44f0",
   "category": "feature",
   "size_bucket": "large",
   "isolation_tier": "B",
-  "with_skill": { "success": true, "tokens": 41230, "duration_sec": 512 },
-  "without_skill": { "success": true, "tokens": 53880, "duration_sec": 690 },
+  "with_skill": {
+    "success": true,
+    "tokens": 41230,
+    "duration_sec": 512
+  },
+  "without_skill": {
+    "success": true,
+    "tokens": 53880,
+    "duration_sec": 690
+  },
   "security_delta": null,
   "category_metrics": {
-    "with_skill": { "test_coverage_pct": 92.0, "lint_errors": 1, "ci_status": "pass" },
-    "without_skill": { "test_coverage_pct": 88.4, "lint_errors": 2, "ci_status": "pass" }
+    "with_skill": {
+      "test_coverage_pct": 92.0,
+      "lint_errors": 1,
+      "ci_status": "pass"
+    },
+    "without_skill": {
+      "test_coverage_pct": 88.4,
+      "lint_errors": 2,
+      "ci_status": "pass"
+    }
   },
   "content_opt_in": true,
   "content_ref": "content_ref_00042",

@@ -41,6 +41,11 @@ export function AdminSkillsPage({ adminApiClient }: { adminApiClient: AdminApiCl
           {skills.map((skill) => (
             <li key={skill.skillId}>
               <Link to={`/admin/skills/${encodeURIComponent(skill.skillId)}`}>{skill.name}</Link>{" "}
+              {skill.githubStars !== null && (
+                <span className="skill-metadata__stars" title="GitHub repository stars">
+                  ★ {skill.githubStars.toLocaleString()}
+                </span>
+              )}
               <span className="skill-list__technical-id">{skill.skillId}</span>
             </li>
           ))}

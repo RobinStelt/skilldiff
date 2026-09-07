@@ -16,6 +16,18 @@ function renderOverview() {
 }
 
 describe("MarketplaceOverviewPage", () => {
+  it("shows repository stars and metadata links separately from performance evidence", async () => {
+    renderOverview();
+    const githubLinks = await screen.findAllByRole("link", { name: /^github$/i });
+    expect(
+      githubLinks.some((link) => link.getAttribute("href") === "https://github.com/example-org/bugfinder"),
+    ).toBe(true);
+    expect(screen.getByTitle("GitHub repository stars (not a performance score)")).toHaveTextContent(
+      /1.?240/,
+    );
+    expect(screen.getByText("MIT")).toBeInTheDocument();
+  });
+
   it("lists every skill with per-category sample sizes, not a single score", async () => {
     renderOverview();
     await waitFor(() => expect(screen.getByText("skill_bugfinder_v2")).toBeInTheDocument());

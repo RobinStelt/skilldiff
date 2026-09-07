@@ -1,12 +1,21 @@
 {
   "skill_id": "skill_persona_helper",
+  "skill_content_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
   "account_id": "acct_00cc11",
   "signature": "aa11...bb22",
   "category": "other",
   "size_bucket": "medium",
   "isolation_tier": "C",
-  "with_skill": { "success": null, "tokens": 5400, "duration_sec": 47 },
-  "without_skill": { "success": null, "tokens": 5100, "duration_sec": 44 },
+  "with_skill": {
+    "success": null,
+    "tokens": 5400,
+    "duration_sec": 47
+  },
+  "without_skill": {
+    "success": null,
+    "tokens": 5100,
+    "duration_sec": 44
+  },
   "security_delta": null,
   "category_metrics": null,
   "content_opt_in": false,

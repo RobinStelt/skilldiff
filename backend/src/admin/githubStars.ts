@@ -16,7 +16,7 @@ export async function fetchGithubStars(githubUrl: string, fetchImpl: typeof fetc
   const repo = parseGithubRepo(githubUrl);
   if (!repo) return null;
   const response = await fetchImpl(`https://api.github.com/repos/${repo}`, {
-    headers: { accept: "application/vnd.github+json", "user-agent": "skill-ab-marktplatz" },
+    headers: { accept: "application/vnd.github+json", "user-agent": "skilldiff" },
   });
   if (!response.ok) return null;
   const body = (await response.json()) as { stargazers_count?: unknown };

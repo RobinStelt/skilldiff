@@ -3,7 +3,7 @@ import { execFileSync } from "node:child_process";
 import { tmpdir, homedir } from "node:os";
 import { join } from "node:path";
 import type { Condition, LinkCapability } from "./types.js";
-import type { IsolationTier } from "@marktplatz/schema";
+import type { IsolationTier } from "@skilldiff/schema";
 
 export interface IsolatedHome {
   path: string;

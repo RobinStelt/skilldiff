@@ -21,6 +21,7 @@ export function CategoryFilter({ selected, onChange }: CategoryFilterProps) {
     <div className="category-filter" role="group" aria-label="Filter by category">
       <button
         type="button"
+        aria-pressed={selected === null}
         className={`category-filter__chip${selected === null ? " category-filter__chip--active" : ""}`}
         onClick={() => onChange(null)}
       >
@@ -30,6 +31,7 @@ export function CategoryFilter({ selected, onChange }: CategoryFilterProps) {
         <button
           key={category}
           type="button"
+          aria-pressed={selected === category}
           className={`category-filter__chip${selected === category ? " category-filter__chip--active" : ""}`}
           onClick={() => onChange(category)}
         >

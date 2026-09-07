@@ -18,7 +18,10 @@ export function createMockApiClient(skills: SkillDetail[]): MarketplaceApiClient
           .filter((c) => !category || c.category === category)
           .map((c) => ({ category: c.category, sampleSize: c.sampleSize })),
       }));
-      return { skills: summaries.filter((s) => s.categories.length > 0), nextCursor: null };
+      return {
+        skills: summaries.filter((s) => s.categories.length > 0 || (!category && s.metadata !== null)),
+        nextCursor: null,
+      };
     },
 
     async getSkill(skillId) {

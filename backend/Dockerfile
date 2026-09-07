@@ -18,16 +18,22 @@ WORKDIR /repo
 #
 # Fix (opt-in, no-op for everyone not behind such a proxy): drop that
 # certificate at docker/extra-ca.crt (gitignored — never commit an
-# org/AV-specific cert) before building. The bracket glob below matches
-# zero-or-one files, so COPY doesn't fail when the file is absent; the
-# `touch` guarantees NODE_EXTRA_CA_CERTS always points at a real (possibly
-# empty, i.e. a no-op) file instead of erroring on a missing one. Plain
-# NODE_EXTRA_CA_CERTS instead of `apk add ca-certificates && update-ca-
-# certificates`: that apk fetch is itself an HTTPS request, so on exactly
-# the network this is meant to fix, apk fails the same way npm does —
-# reproduced.
+# org/AV-specific cert) before building. docker/ itself always exists
+# (it's tracked, holds this comment's README) so the COPY below never
+# fails; the RUN below conditionally promotes the cert only if present,
+# and the `touch` guarantees NODE_EXTRA_CA_CERTS always points at a real
+# (possibly empty, i.e. a no-op) file instead of erroring on a missing
+# one. Not a bracket-glob COPY (docker/extra-ca.cr[t]) — Docker Compose's
+# Bake builder (default since Compose v2.39+) statically parses COPY
+# source paths to shrink the transferred build context and mishandles
+# that glob, failing the whole build with "lstat /docker: no such file
+# or directory" even though the directory exists. Plain NODE_EXTRA_CA_CERTS
+# instead of `apk add ca-certificates && update-ca-certificates`: that apk
+# fetch is itself an HTTPS request, so on exactly the network this is
+# meant to fix, apk fails the same way npm does — reproduced.
 RUN mkdir -p /extra-ca && touch /extra-ca/extra-ca.crt
-COPY docker/extra-ca.cr[t] /extra-ca/
+COPY docker/ /extra-ca-src/
+RUN if [ -f /extra-ca-src/extra-ca.crt ]; then cp /extra-ca-src/extra-ca.crt /extra-ca/extra-ca.crt; fi
 ENV NODE_EXTRA_CA_CERTS=/extra-ca/extra-ca.crt
 # --no-audit/--no-fund: npm's automatic post-install audit call is itself
 # an extra network request, no reason to make one during a Docker build.
@@ -49,7 +55,7 @@ RUN for i in 1 2 3; do \
     done && npm --prefix backend run build
 
 # Final stage mirrors the same repo-relative layout (schema/ next to
-# backend/) so backend/node_modules/@marktplatz/schema — an npm-managed
+# backend/) so backend/node_modules/@skilldiff/schema — an npm-managed
 # symlink to ../../schema, not a copy — still resolves correctly. Not
 # pruning schema's node_modules separately: it's tiny (only zod).
 FROM node:20-alpine

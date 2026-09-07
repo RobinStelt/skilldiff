@@ -1,0 +1,52 @@
+[
+  {
+    "repo": "nickoc/clawscan",
+    "url": "https://github.com/nickoc/clawscan",
+    "description": "Security scanner for OpenClaw/ClawHub skills",
+    "stars": 3,
+    "license": "MIT",
+    "owner": "nickoc",
+    "branch": "main",
+    "fetchedAt": "2026-09-06T18:41:47.2731751Z"
+  },
+  {
+    "repo": "prompt-security/clawsec",
+    "url": "https://github.com/prompt-security/clawsec",
+    "description": "A complete security skill suite for OpenClaw, Hermes, PicoClaw and NanoClaw agents (and variants). Protect your SOUL.md (etc') with drift detection, live security recommendations, automated audits, and skill integrity verification. All from one installable suite.",
+    "stars": 1100,
+    "license": "AGPL-3.0",
+    "owner": "prompt-security",
+    "branch": "main",
+    "fetchedAt": "2026-09-06T18:41:47.5712431Z"
+  },
+  {
+    "repo": "lackeyjb/playwright-skill",
+    "url": "https://github.com/lackeyjb/playwright-skill",
+    "description": "General-purpose Playwright automation for coding agents",
+    "stars": 3107,
+    "license": "MIT",
+    "owner": "lackeyjb",
+    "branch": "main",
+    "fetchedAt": "2026-09-06T18:41:47.8477890Z"
+  },
+  {
+    "repo": "nowork-studio/notfair-plugin",
+    "url": "https://github.com/nowork-studio/notfair-plugin",
+    "description": "Open-source SEO, GEO, and marketing skills for AI agents.",
+    "stars": 3570,
+    "license": "MIT",
+    "owner": "nowork-studio",
+    "branch": "main",
+    "fetchedAt": "2026-09-06T18:41:48.1044701Z"
+  },
+  {
+    "repo": "anthropics/skills",
+    "url": "https://github.com/anthropics/skills",
+    "description": "Public repository for Agent Skills",
+    "stars": 174828,
+    "license": null,
+    "owner": "anthropics",
+    "branch": "main",
+    "fetchedAt": "2026-09-06T18:41:48.3644400Z"
+  }
+]

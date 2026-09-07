@@ -72,28 +72,28 @@ describe("watched skills", () => {
   it("adds a watched skill and persists it", () => {
     configDir = mkdtempSync(join(tmpdir(), "skill-ab-config-"));
     let config = loadOrCreateConfig(configDir);
-    config = addWatchedSkill(config, { skillId: "ponytail", skillSourceDir: "C:\\skills\\ponytail" }, configDir);
-    expect(config.watchedSkills).toEqual([{ skillId: "ponytail", skillSourceDir: "C:\\skills\\ponytail" }]);
+    config = addWatchedSkill(config, { skillId: "ponytail", skillSourceDir: "C:\\skills\\ponytail", lastKnownHash: null }, configDir);
+    expect(config.watchedSkills).toEqual([{ skillId: "ponytail", skillSourceDir: "C:\\skills\\ponytail", lastKnownHash: null }]);
 
     const reloaded = loadOrCreateConfig(configDir);
-    expect(reloaded.watchedSkills).toEqual([{ skillId: "ponytail", skillSourceDir: "C:\\skills\\ponytail" }]);
+    expect(reloaded.watchedSkills).toEqual([{ skillId: "ponytail", skillSourceDir: "C:\\skills\\ponytail", lastKnownHash: null }]);
   });
 
   it("replaces (not duplicates) an existing entry with the same skillId", () => {
     configDir = mkdtempSync(join(tmpdir(), "skill-ab-config-"));
     let config = loadOrCreateConfig(configDir);
-    config = addWatchedSkill(config, { skillId: "ponytail", skillSourceDir: "old/path" }, configDir);
-    config = addWatchedSkill(config, { skillId: "ponytail", skillSourceDir: "new/path" }, configDir);
-    expect(config.watchedSkills).toEqual([{ skillId: "ponytail", skillSourceDir: "new/path" }]);
+    config = addWatchedSkill(config, { skillId: "ponytail", skillSourceDir: "old/path", lastKnownHash: null }, configDir);
+    config = addWatchedSkill(config, { skillId: "ponytail", skillSourceDir: "new/path", lastKnownHash: null }, configDir);
+    expect(config.watchedSkills).toEqual([{ skillId: "ponytail", skillSourceDir: "new/path", lastKnownHash: null }]);
   });
 
   it("removes a watched skill by id", () => {
     configDir = mkdtempSync(join(tmpdir(), "skill-ab-config-"));
     let config = loadOrCreateConfig(configDir);
-    config = addWatchedSkill(config, { skillId: "ponytail", skillSourceDir: "a" }, configDir);
-    config = addWatchedSkill(config, { skillId: "humanizer", skillSourceDir: "b" }, configDir);
+    config = addWatchedSkill(config, { skillId: "ponytail", skillSourceDir: "a", lastKnownHash: null }, configDir);
+    config = addWatchedSkill(config, { skillId: "humanizer", skillSourceDir: "b", lastKnownHash: null }, configDir);
     config = removeWatchedSkill(config, "ponytail", configDir);
-    expect(config.watchedSkills).toEqual([{ skillId: "humanizer", skillSourceDir: "b" }]);
+    expect(config.watchedSkills).toEqual([{ skillId: "humanizer", skillSourceDir: "b", lastKnownHash: null }]);
   });
 
   it("picks null from an empty watch list", () => {
@@ -105,9 +105,9 @@ describe("watched skills", () => {
   it("picks deterministically according to the injected rng, never a bundle of several", () => {
     configDir = mkdtempSync(join(tmpdir(), "skill-ab-config-"));
     let config = loadOrCreateConfig(configDir);
-    config = addWatchedSkill(config, { skillId: "a", skillSourceDir: "a-dir" }, configDir);
-    config = addWatchedSkill(config, { skillId: "b", skillSourceDir: "b-dir" }, configDir);
-    config = addWatchedSkill(config, { skillId: "c", skillSourceDir: "c-dir" }, configDir);
+    config = addWatchedSkill(config, { skillId: "a", skillSourceDir: "a-dir", lastKnownHash: null }, configDir);
+    config = addWatchedSkill(config, { skillId: "b", skillSourceDir: "b-dir", lastKnownHash: null }, configDir);
+    config = addWatchedSkill(config, { skillId: "c", skillSourceDir: "c-dir", lastKnownHash: null }, configDir);
 
     expect(pickRandomWatchedSkill(config, () => 0)?.skillId).toBe("a");
     expect(pickRandomWatchedSkill(config, () => 0.999)?.skillId).toBe("c");

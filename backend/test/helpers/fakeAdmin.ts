@@ -1,10 +1,16 @@
 import { randomUUID } from "node:crypto";
 import type { AdminUser, AdminUserStore } from "../../src/admin/adminUserStore.js";
 import type { AdminSessionStore } from "../../src/admin/sessions.js";
-import type { SkillMetadata, SkillMetadataStore, UpsertSkillMetadataInput } from "../../src/admin/skillMetadataStore.js";
+import type {
+  SkillMetadata,
+  SkillMetadataStore,
+  UpsertSkillMetadataInput,
+} from "../../src/admin/skillMetadataStore.js";
 import { hashPassword } from "../../src/admin/passwords.js";
 
-export function createFakeAdminUserStore(users: AdminUser[] = []): AdminUserStore & { users: Map<string, AdminUser> } {
+export function createFakeAdminUserStore(
+  users: AdminUser[] = [],
+): AdminUserStore & { users: Map<string, AdminUser> } {
   const byUsername = new Map(users.map((u) => [u.username, u]));
   return {
     users: byUsername,
@@ -15,7 +21,10 @@ export function createFakeAdminUserStore(users: AdminUser[] = []): AdminUserStor
 }
 
 /** Convenience for tests that just need one known admin with a known password. */
-export function createFakeAdminUserStoreWithOneUser(username: string, password: string): AdminUserStore & { userId: string } {
+export function createFakeAdminUserStoreWithOneUser(
+  username: string,
+  password: string,
+): AdminUserStore & { userId: string } {
   const id = randomUUID();
   const store = createFakeAdminUserStore([{ id, username, passwordHash: hashPassword(password) }]);
   return { ...store, userId: id };
@@ -40,7 +49,9 @@ export function createFakeAdminSessionStore(): AdminSessionStore & { tokens: Map
   };
 }
 
-export function createFakeSkillMetadataStore(seed: SkillMetadata[] = []): SkillMetadataStore & { rows: Map<string, SkillMetadata> } {
+export function createFakeSkillMetadataStore(
+  seed: SkillMetadata[] = [],
+): SkillMetadataStore & { rows: Map<string, SkillMetadata> } {
   const rows = new Map(seed.map((s) => [s.skillId, s]));
   return {
     rows,
@@ -61,8 +72,16 @@ export function createFakeSkillMetadataStore(seed: SkillMetadata[] = []): SkillM
         license: input.license ?? null,
         maintainer: input.maintainer ?? null,
         declaredCategory: input.declaredCategory ?? null,
-        githubStars: existing?.githubStars ?? null,
-        githubStarsFetchedAt: existing?.githubStarsFetchedAt ?? null,
+        githubStars:
+          input.githubStars !== undefined
+            ? input.githubStars
+            : existing?.githubUrl !== (input.githubUrl ?? null)
+              ? null
+              : (existing?.githubStars ?? null),
+        githubStarsFetchedAt:
+          input.githubStars !== undefined || existing?.githubUrl !== (input.githubUrl ?? null)
+            ? null
+            : (existing?.githubStarsFetchedAt ?? null),
         createdAt: existing?.createdAt ?? now,
         updatedAt: now,
       };

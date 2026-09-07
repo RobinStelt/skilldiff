@@ -5,6 +5,7 @@ import { verifyPassword } from "../admin/passwords.js";
 import type { AdminUserStore } from "../admin/adminUserStore.js";
 import type { AdminSessionStore } from "../admin/sessions.js";
 import type { SkillMetadataStore } from "../admin/skillMetadataStore.js";
+import { parseGithubRepo } from "../admin/githubStars.js";
 
 const SESSION_COOKIE = "admin_session";
 
@@ -98,19 +99,35 @@ export async function registerAdminRoutes(app: FastifyInstance, deps: AdminRoute
               license?: unknown;
               maintainer?: unknown;
               declaredCategory?: unknown;
+              githubStars?: unknown;
             }
           | undefined;
         if (typeof body?.name !== "string" || body.name.trim().length === 0) {
           return reply.code(400).send({ error: "name is required" });
         }
+        if (
+          body.githubStars !== undefined &&
+          body.githubStars !== null &&
+          (typeof body.githubStars !== "number" ||
+            !Number.isInteger(body.githubStars) ||
+            body.githubStars < 0 ||
+            body.githubStars > 2_147_483_647)
+        ) {
+          return reply.code(400).send({ error: "GitHub stars must be a non-negative integer or null" });
+        }
+        const githubUrl = typeof body.githubUrl === "string" ? body.githubUrl.trim() || null : null;
+        if (githubUrl && !parseGithubRepo(githubUrl)) {
+          return reply.code(400).send({ error: "GitHub URL must point to a github.com repository" });
+        }
         const metadata = await deps.skillMetadataStore.upsert({
           skillId,
-          name: body.name,
+          name: body.name.trim(),
           description: typeof body.description === "string" ? body.description : null,
-          githubUrl: typeof body.githubUrl === "string" ? body.githubUrl : null,
+          githubUrl,
           license: typeof body.license === "string" ? body.license : null,
           maintainer: typeof body.maintainer === "string" ? body.maintainer : null,
           declaredCategory: typeof body.declaredCategory === "string" ? body.declaredCategory : null,
+          ...(body.githubStars !== undefined ? { githubStars: body.githubStars as number | null } : {}),
           createdBy: request.adminUserId!,
         });
         return { skill: metadata };

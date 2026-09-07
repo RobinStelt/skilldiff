@@ -1,4 +1,4 @@
-import type { SeverityCounts } from "@marktplatz/schema";
+import type { SeverityCounts } from "@skilldiff/schema";
 
 export function emptySeverityCounts(): SeverityCounts {
   return { critical: 0, high: 0, medium: 0, low: 0 };

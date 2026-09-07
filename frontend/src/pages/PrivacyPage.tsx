@@ -17,7 +17,7 @@ export function PrivacyPage() {
 
       <h2>What this service is</h2>
       <p>
-        The Skill-A/B Marketplace measures whether a Claude Code skill helps with real tasks, by running a task once
+        Skilldiff measures whether a Claude Code skill helps with real tasks, by running a task once
         with the skill loaded and once without, automatically, and aggregating results across many contributors. This
         page covers data handled by the backend and website. The CLI runs entirely on your own machine except for
         what it explicitly uploads.

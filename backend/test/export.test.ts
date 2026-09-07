@@ -16,6 +16,7 @@ describe("toCsv", () => {
         isolationTierBreakdown: { A: 10, B: 2, C: 0 },
         distinctAccountCount: 6,
         seedDataMajority: false,
+        distinctContentHashCount: 1,
       },
     ];
     const csv = toCsv(metrics);
@@ -41,6 +42,7 @@ describe("toCsv", () => {
         isolationTierBreakdown: { A: 0, B: 4, C: 0 },
         distinctAccountCount: 2,
         seedDataMajority: false,
+        distinctContentHashCount: 1,
       },
     ];
     expect(() => toCsv(metrics)).not.toThrow();

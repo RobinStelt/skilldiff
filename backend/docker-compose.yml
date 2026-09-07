@@ -8,11 +8,11 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: marktplatz
+      POSTGRES_DB: skilldiff
     ports:
       - "5432:5432"
     volumes:
-      - marktplatz-postgres:/var/lib/postgresql/data
+      - skilldiff-postgres:/var/lib/postgresql/data
 
 volumes:
-  marktplatz-postgres:
+  skilldiff-postgres:

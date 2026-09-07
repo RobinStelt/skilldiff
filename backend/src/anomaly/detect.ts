@@ -1,4 +1,4 @@
-import type { Category } from "@marktplatz/schema";
+import type { Category } from "@skilldiff/schema";
 
 export interface RunRecordForAnomalyCheck {
   runId: string;

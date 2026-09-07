@@ -1,5 +1,5 @@
 import { createHmac } from "node:crypto";
-import { canonicalJson } from "@marktplatz/schema";
+import { canonicalJson } from "@skilldiff/schema";
 
 /**
  * Local signature over the full payload (excluding the `signature` field
@@ -7,7 +7,7 @@ import { canonicalJson } from "@marktplatz/schema";
  * backend, NOT manipulation at the source itself (plan section 4, field
  * comment). `signingSecret` never leaves this machine.
  *
- * Uses the shared `canonicalJson` from @marktplatz/schema (not a local
+ * Uses the shared `canonicalJson` from @skilldiff/schema (not a local
  * `JSON.stringify(payload, Object.keys(payload).sort())`, which used to
  * live here) — that approach only sorted/included top-level keys and
  * silently dropped every nested object's content. See

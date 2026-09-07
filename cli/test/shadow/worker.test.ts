@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { resolveConditionOutcomes } from "../../src/shadow/worker.js";
-import type { RunOutcome } from "@marktplatz/schema";
+import type { RunOutcome } from "@skilldiff/schema";
 
 function outcome(tokens: number): RunOutcome {
   return { success: true, tokens, duration_sec: 1 };

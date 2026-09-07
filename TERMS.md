@@ -8,7 +8,7 @@ _Last updated: [DATE]. Operator: [NAME/ENTITY], [ADDRESS], [CONTACT EMAIL]._
 
 ## What this is
 
-The Skill-A/B Marketplace ("the Service") shows measured, aggregated
+SkillDiff ("the Service") shows measured, aggregated
 comparisons of Claude Code skills — each based on a task run once with a
 skill loaded and once without, on a contributor's own machine. The
 `skill-ab` CLI (source: `[REPO URL]`, license: `[MIT/Apache — confirm]`)

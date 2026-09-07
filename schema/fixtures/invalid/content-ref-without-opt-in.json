@@ -1,12 +1,21 @@
 {
   "skill_id": "skill_copywriter_pro",
+  "skill_content_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
   "account_id": "acct_77e2f9",
   "signature": "1234...5678",
   "category": "marketing",
   "size_bucket": "small",
   "isolation_tier": "B",
-  "with_skill": { "success": null, "tokens": 3120, "duration_sec": 28 },
-  "without_skill": { "success": null, "tokens": 3980, "duration_sec": 35 },
+  "with_skill": {
+    "success": null,
+    "tokens": 3120,
+    "duration_sec": 28
+  },
+  "without_skill": {
+    "success": null,
+    "tokens": 3980,
+    "duration_sec": 35
+  },
   "security_delta": null,
   "category_metrics": null,
   "content_opt_in": false,

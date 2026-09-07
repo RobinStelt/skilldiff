@@ -2,7 +2,7 @@ import { exec } from "node:child_process";
 import { promisify } from "node:util";
 import { existsSync, readdirSync } from "node:fs";
 import { join } from "node:path";
-import type { SeverityCounts } from "@marktplatz/schema";
+import type { SeverityCounts } from "@skilldiff/schema";
 import { emptySeverityCounts } from "./severityCounts.js";
 
 const execAsync = promisify(exec);

@@ -16,11 +16,11 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: marktplatz
+      POSTGRES_DB: skilldiff
     ports:
       - "5432:5432"
     volumes:
-      - marktplatz-postgres:/var/lib/postgresql/data
+      - skilldiff-postgres:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 2s
@@ -38,7 +38,7 @@ services:
     working_dir: /repo/backend
     command: ["npx", "tsx", "scripts/migrate.ts"]
     environment:
-      MIGRATION_DATABASE_URL: postgres://postgres:postgres@postgres:5432/marktplatz
+      MIGRATION_DATABASE_URL: postgres://postgres:postgres@postgres:5432/skilldiff
     depends_on:
       postgres:
         condition: service_healthy
@@ -50,8 +50,8 @@ services:
     ports:
       - "3000:3000"
     environment:
-      APP_DATABASE_URL: postgres://app_backend:change-me-app-backend@postgres:5432/marktplatz
-      CONTENT_WRITER_DATABASE_URL: postgres://content_writer:change-me-content-writer@postgres:5432/marktplatz
+      APP_DATABASE_URL: postgres://app_backend:change-me-app-backend@postgres:5432/skilldiff
+      CONTENT_WRITER_DATABASE_URL: postgres://content_writer:change-me-content-writer@postgres:5432/skilldiff
       PORT: "3000"
     depends_on:
       migrate:
@@ -72,4 +72,4 @@ services:
       - backend
 
 volumes:
-  marktplatz-postgres:
+  skilldiff-postgres:

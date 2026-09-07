@@ -1,4 +1,4 @@
-import type { Category, RunOutcome } from "@marktplatz/schema";
+import type { Category, RunOutcome } from "@skilldiff/schema";
 import { readTestCoverage } from "./coverage.js";
 import { countLintErrors } from "./lint.js";
 import { computeDiffSize, estimateCyclomaticComplexity } from "./complexity.js";

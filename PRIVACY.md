@@ -1,7 +1,7 @@
 # Privacy Policy
 
 **Draft — not legal advice.** This is a factual description of what the
-Skill-A/B Marketplace software actually does, written by the people who
+SkillDiff software actually does, written by the people who
 built it, to give you (and a lawyer, before this goes live for real) an
 accurate starting point. If you operate this service for the public,
 especially from the EU, have this reviewed — GDPR applies, and Germany's
@@ -12,7 +12,7 @@ _Last updated: [DATE]. Operator: [NAME/ENTITY], [ADDRESS], [CONTACT EMAIL]._
 
 ## What this service is
 
-The Skill-A/B Marketplace measures whether a Claude Code skill helps with
+SkillDiff measures whether a Claude Code skill helps with
 real tasks, by running a task once with the skill loaded and once without,
 automatically, and aggregating the results across many contributors. This
 page covers data handled by the **backend and website**. The **CLI**

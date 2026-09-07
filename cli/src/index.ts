@@ -2,7 +2,7 @@
 import { Command } from "commander";
 import pc from "picocolors";
 import { runCommand } from "./commands/run.js";
-import { watchAddCommand, watchRemoveCommand, watchListCommand } from "./commands/watch.js";
+import { watchAddCommand, watchRemoveCommand, watchListCommand, watchSyncCommand } from "./commands/watch.js";
 import { configSetCommand, configUnsetCommand, configShowCommand } from "./commands/config.js";
 import {
   shadowInstallCommand,
@@ -18,7 +18,7 @@ program
   .name("skill-ab")
   .description(
     "Runs a task automatically once with and once without a skill, measures it automatically " +
-      "(no manual rating), and contributes the result to the Skill-A/B Marketplace.",
+      "(no manual rating), and contributes the result to SkillDiff.",
   )
   .version("0.1.0");
 
@@ -99,6 +99,26 @@ watch
   .action(() => {
     try {
       watchListCommand();
+    } catch (err) {
+      console.error(pc.red("Error:"), err instanceof Error ? err.message : err);
+      process.exitCode = 1;
+    }
+  });
+
+watch
+  .command("sync")
+  .description(
+    "Watch every skill that is both installed locally (.claude/skills/) and already in your marketplace catalog " +
+      "— drops watched skills you've uninstalled, and warns (without silently mixing data) when a watched skill's content changed",
+  )
+  .option("--dir <path>", "Project directory to scan for .claude/skills/ (default: current directory)")
+  .option(
+    "--endpoint <url>",
+    'Backend to check the catalog against. Omit to use "skill-ab config set endpoint" (if set)',
+  )
+  .action(async (opts) => {
+    try {
+      await watchSyncCommand({ dir: opts.dir, endpointUrl: opts.endpoint });
     } catch (err) {
       console.error(pc.red("Error:"), err instanceof Error ? err.message : err);
       process.exitCode = 1;

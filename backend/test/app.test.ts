@@ -2,7 +2,11 @@ import { describe, expect, it } from "vitest";
 import { buildApp, type AppDeps } from "../src/app.js";
 import { createInMemoryAccountStore } from "../src/accounts/accountStore.js";
 import { createFakeContentRepo, createFakeRunResultRepo } from "./helpers/fakeRepos.js";
-import { createFakeAdminUserStore, createFakeAdminSessionStore, createFakeSkillMetadataStore } from "./helpers/fakeAdmin.js";
+import {
+  createFakeAdminUserStore,
+  createFakeAdminSessionStore,
+  createFakeSkillMetadataStore,
+} from "./helpers/fakeAdmin.js";
 import { hashPassword } from "../src/admin/passwords.js";
 import { buildSignedRunResult } from "./helpers/fixtures.js";
 import type { SkillCategoryMetrics } from "../src/aggregation/metrics.js";
@@ -50,7 +54,11 @@ describe("POST /v1/accounts", () => {
 
   it("rejects re-registration with a different secret", async () => {
     const { app } = makeApp();
-    await app.inject({ method: "POST", url: "/v1/accounts", payload: { account_id: "acct_1", signing_secret: "secret" } });
+    await app.inject({
+      method: "POST",
+      url: "/v1/accounts",
+      payload: { account_id: "acct_1", signing_secret: "secret" },
+    });
     const res = await app.inject({
       method: "POST",
       url: "/v1/accounts",
@@ -63,7 +71,11 @@ describe("POST /v1/accounts", () => {
 describe("POST /v1/run-results", () => {
   it("rejects an invalid signature with 401 (acceptance criterion)", async () => {
     const { app } = makeApp();
-    await app.inject({ method: "POST", url: "/v1/accounts", payload: { account_id: "acct_5b7d21", signing_secret: "s3cret" } });
+    await app.inject({
+      method: "POST",
+      url: "/v1/accounts",
+      payload: { account_id: "acct_5b7d21", signing_secret: "s3cret" },
+    });
 
     const runResult = buildSignedRunResult("s3cret");
     const tampered = { ...runResult, cli_version: "tampered" };
@@ -74,14 +86,22 @@ describe("POST /v1/run-results", () => {
 
   it("rejects a schema-invalid payload with 400 (acceptance criterion)", async () => {
     const { app } = makeApp();
-    const res = await app.inject({ method: "POST", url: "/v1/run-results", payload: { not: "a run result" } });
+    const res = await app.inject({
+      method: "POST",
+      url: "/v1/run-results",
+      payload: { not: "a run result" },
+    });
     expect(res.statusCode).toBe(400);
     expect(res.json().error).toBe("invalid_payload");
   });
 
   it("accepts a valid signed run result from a registered account", async () => {
     const { app } = makeApp();
-    await app.inject({ method: "POST", url: "/v1/accounts", payload: { account_id: "acct_5b7d21", signing_secret: "s3cret" } });
+    await app.inject({
+      method: "POST",
+      url: "/v1/accounts",
+      payload: { account_id: "acct_5b7d21", signing_secret: "s3cret" },
+    });
     const runResult = buildSignedRunResult("s3cret");
     const res = await app.inject({ method: "POST", url: "/v1/run-results", payload: runResult });
     expect(res.statusCode).toBe(201);
@@ -102,6 +122,7 @@ describe("GET /v1/skills/:skillId/metrics", () => {
         isolationTierBreakdown: NO_TIER_BREAKDOWN,
         distinctAccountCount: 1,
         seedDataMajority: false,
+        distinctContentHashCount: 1,
       },
       {
         skillId: "skill_x",
@@ -114,6 +135,7 @@ describe("GET /v1/skills/:skillId/metrics", () => {
         isolationTierBreakdown: NO_TIER_BREAKDOWN,
         distinctAccountCount: 1,
         seedDataMajority: false,
+        distinctContentHashCount: 1,
       },
     ];
     const { app } = makeApp({ getSkillMetrics: async () => metricsByCategory });
@@ -138,7 +160,9 @@ describe("GET /api/skills", () => {
       listSkills: async (options) => {
         received = options;
         return {
-          skills: [{ skillId: "skill_x", categories: [{ category: "debugging", sampleSize: 5 }], metadata: null }],
+          skills: [
+            { skillId: "skill_x", categories: [{ category: "debugging", sampleSize: 5 }], metadata: null },
+          ],
           nextCursor: null,
         };
       },
@@ -187,6 +211,7 @@ describe("GET /api/skills/:skillId", () => {
             isolationTierBreakdown: { A: 3, B: 1, C: 1 },
             distinctAccountCount: 4,
             seedDataMajority: true,
+            distinctContentHashCount: 1,
           },
         ],
       }),
@@ -284,6 +309,53 @@ describe("POST /api/admin/login", () => {
 });
 
 describe("admin skill catalog CRUD", () => {
+  it("validates and persists editable stars without erasing them on unrelated updates", async () => {
+    const skillMetadataStore = createFakeSkillMetadataStore();
+    const sessionStore = createFakeAdminSessionStore();
+    const { token } = await sessionStore.create("admin_1");
+    const { app } = makeApp({ skillMetadataStore, sessionStore });
+    const headers = { cookie: `admin_session=${token}` };
+    const save = (githubStars: unknown) =>
+      app.inject({
+        method: "PUT",
+        url: "/api/admin/skills/example",
+        headers,
+        payload: { name: "Example", githubUrl: "https://github.com/example/repo", githubStars },
+      });
+
+    for (const invalid of [-1, 1.5, "42", 2_147_483_648]) {
+      expect((await save(invalid)).statusCode).toBe(400);
+    }
+    expect(skillMetadataStore.rows.size).toBe(0);
+    expect((await save(42)).json().skill.githubStars).toBe(42);
+    const preserved = await app.inject({
+      method: "PUT",
+      url: "/api/admin/skills/example",
+      headers,
+      payload: { name: "Edited", githubUrl: "https://github.com/example/repo" },
+    });
+    expect(preserved.json().skill.githubStars).toBe(42);
+    expect((await save(0)).json().skill.githubStars).toBe(0);
+    expect((await save(null)).json().skill.githubStars).toBeNull();
+    await app.close();
+  });
+
+  it("rejects an unsafe repository URL before saving metadata", async () => {
+    const skillMetadataStore = createFakeSkillMetadataStore();
+    const sessionStore = createFakeAdminSessionStore();
+    const { token } = await sessionStore.create("admin_1");
+    const { app } = makeApp({ skillMetadataStore, sessionStore });
+    const result = await app.inject({
+      method: "PUT",
+      url: "/api/admin/skills/example",
+      headers: { cookie: `admin_session=${token}` },
+      payload: { name: "Example", githubUrl: "javascript:alert(1)" },
+    });
+    expect(result.statusCode).toBe(400);
+    expect(skillMetadataStore.rows.size).toBe(0);
+    await app.close();
+  });
+
   it("rejects unauthenticated access to admin endpoints", async () => {
     const { app } = makeApp();
     const res = await app.inject({ method: "GET", url: "/api/admin/skills" });

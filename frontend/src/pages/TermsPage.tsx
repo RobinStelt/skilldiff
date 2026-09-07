@@ -14,7 +14,7 @@ export function TermsPage() {
 
       <h2>What this is</h2>
       <p>
-        The Skill-A/B Marketplace ("the Service") shows measured, aggregated comparisons of Claude Code skills — each
+        Skilldiff ("the Service") shows measured, aggregated comparisons of Claude Code skills — each
         based on a task run once with a skill loaded and once without, on a contributor's own machine. The{" "}
         <code>skill-ab</code> CLI (source: [REPO URL], license: [MIT/Apache — confirm]) is what performs and uploads
         these comparisons; the website displays the aggregated results.

@@ -1,5 +1,5 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
-import { canonicalJson, type RunResult } from "@marktplatz/schema";
+import { canonicalJson, type RunResult } from "@skilldiff/schema";
 
 export function computeHmac(canonicalPayload: string, signingSecret: string): string {
   return createHmac("sha256", signingSecret).update(canonicalPayload).digest("hex");
@@ -7,7 +7,7 @@ export function computeHmac(canonicalPayload: string, signingSecret: string): st
 
 /**
  * Constant-time comparison — avoids leaking secret material via timing.
- * Uses the shared `canonicalJson` from @marktplatz/schema, the same
+ * Uses the shared `canonicalJson` from @skilldiff/schema, the same
  * function `cli/src/upload/signature.ts` signs with — previously this
  * file reproduced the CLI's canonicalization locally, including a real
  * bug where nested fields (`with_skill`, `category_metrics`,

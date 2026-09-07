@@ -3,9 +3,11 @@
 FROM node:20-alpine AS build
 WORKDIR /repo
 # See backend/Dockerfile for why (TLS-intercepting proxy/AV on the host +
-# Docker Desktop's network relay) — same opt-in, no-op-by-default fix.
+# Docker Desktop's network relay, and why this isn't a bracket-glob COPY)
+# — same opt-in, no-op-by-default fix.
 RUN mkdir -p /extra-ca && touch /extra-ca/extra-ca.crt
-COPY docker/extra-ca.cr[t] /extra-ca/
+COPY docker/ /extra-ca-src/
+RUN if [ -f /extra-ca-src/extra-ca.crt ]; then cp /extra-ca-src/extra-ca.crt /extra-ca/extra-ca.crt; fi
 ENV NODE_EXTRA_CA_CERTS=/extra-ca/extra-ca.crt
 COPY schema ./schema
 COPY frontend ./frontend
@@ -31,4 +33,5 @@ RUN npm run build
 
 FROM nginx:1.27-alpine
 COPY --from=build /repo/frontend/dist /usr/share/nginx/html
+COPY frontend/nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80

@@ -17,6 +17,7 @@ import { showLocalDelta } from "../report/localReport.js";
 import { submitRunResult } from "../upload/submit.js";
 import { buildRunResult } from "../buildRunResult.js";
 import { getClaudeVersion, getCliBuildHash, getCliVersion } from "../versionInfo.js";
+import { hashSkillSourceDir } from "../skill/contentHash.js";
 
 export interface RunCommandOptions {
   /** Omit together with skillSourceDir to pick randomly from the watch list (`skill-ab watch add`) instead. */
@@ -75,6 +76,13 @@ export async function runCommand(options: RunCommandOptions): Promise<void> {
     skillSourceDir = watched.skillSourceDir;
     console.log(pc.dim(`No --skill given — picked "${skillId}" from your watch list.`));
   }
+  if (!skillSourceDir) {
+    // Unreachable in practice — the block above either has both flags
+    // already or throws — but keeps the hashing below honest instead of
+    // silently hashing `undefined`.
+    throw new Error("Internal error: skillSourceDir was not resolved.");
+  }
+  const skillContentHash = hashSkillSourceDir(skillSourceDir);
 
   // Auto-detect a check command from the project when none was given
   // explicitly (detectCheckCommand.ts — same "transparent heuristic"
@@ -167,6 +175,7 @@ export async function runCommand(options: RunCommandOptions): Promise<void> {
 
     const runResult = buildRunResult({
       skillId,
+      skillContentHash,
       accountId: config.accountId,
       signingSecret: config.signingSecret,
       category,

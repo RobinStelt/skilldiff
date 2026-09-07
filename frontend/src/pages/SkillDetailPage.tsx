@@ -52,6 +52,12 @@ export function SkillDetailPage({ apiClient }: { apiClient: MarketplaceApiClient
       </Link>
       <h1>{detail.skillId}</h1>
       <SkillMetadataCard metadata={detail.metadata} />
+      {detail.categories.length === 0 && (
+        <p role="status">
+          No A/B comparisons yet. Catalog information is available; measured results will appear after runs
+          are contributed.
+        </p>
+      )}
       <p className="skill-detail-page__intro">
         Every metric below is shown separately per category — there is no combined score across categories.
       </p>
@@ -61,7 +67,9 @@ export function SkillDetailPage({ apiClient }: { apiClient: MarketplaceApiClient
       ))}
 
       <p className="skill-detail-page__source">
-        <a href={detail.aggregationSourceUrl}>View the aggregation logic behind these numbers (open source)</a>
+        <a href={detail.aggregationSourceUrl}>
+          View the aggregation logic behind these numbers (open source)
+        </a>
       </p>
     </main>
   );

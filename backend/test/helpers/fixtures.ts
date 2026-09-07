@@ -1,10 +1,11 @@
-import { canonicalJson, type RunResult } from "@marktplatz/schema";
+import { canonicalJson, type RunResult } from "@skilldiff/schema";
 import { computeHmac } from "../../src/canonical.js";
 
 /** Mirrors schema/fixtures/valid/feature.json — kept in sync manually since backend can't import fixtures from another package. */
 export function buildUnsignedRunResult(overrides: Partial<RunResult> = {}): Omit<RunResult, "signature"> {
   const base = {
     skill_id: "skill_api_scaffolder",
+    skill_content_hash: "b".repeat(64),
     account_id: "acct_5b7d21",
     category: "feature" as const,
     size_bucket: "large" as const,

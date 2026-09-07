@@ -1,9 +1,11 @@
 import { randomUUID } from "node:crypto";
-import type { Category, IsolationTier, RunOutcome, RunResult, SecurityDelta, SizeBucket } from "@marktplatz/schema";
+import type { Category, IsolationTier, RunOutcome, RunResult, SecurityDelta, SizeBucket } from "@skilldiff/schema";
 import { sign } from "./upload/signature.js";
 
 export interface BuildRunResultParams {
   skillId: string;
+  /** sha256 (hex) of the skill source directory at run time — see skill/contentHash.ts and schema/src/schema.ts. */
+  skillContentHash: string;
   accountId: string;
   signingSecret: string;
   category: Category;
@@ -31,6 +33,7 @@ export interface BuildRunResultParams {
 function buildUnsignedPayload(p: BuildRunResultParams): Omit<RunResult, "signature"> {
   const shared = {
     skill_id: p.skillId,
+    skill_content_hash: p.skillContentHash,
     account_id: p.accountId,
     size_bucket: p.sizeBucket,
     isolation_tier: p.isolationTier,

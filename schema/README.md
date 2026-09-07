@@ -1,7 +1,7 @@
-# @marktplatz/schema
+# @skilldiff/schema
 
 Binding contract layer between the CLI (Phase 2) and backend (Phase 3) of
-the Skill-A/B-Marketplace. A pure schema package — **no** runtime
+SkillDiff. A pure schema package — **no** runtime
 dependency on CLI or backend code, so both can import it independently.
 
 Full project context: `../skill-ab-marktplatz-plan.md`, section 4 (data
@@ -33,7 +33,7 @@ fully represented in the JSON schema.
 ## Usage in CLI/backend
 
 ```ts
-import { validateRunResult, type RunResult } from "@marktplatz/schema";
+import { validateRunResult, type RunResult } from "@skilldiff/schema";
 
 const result = validateRunResult(unknownData);
 if (Array.isArray(result)) {

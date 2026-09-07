@@ -1,7 +1,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import type { RunResult, ValidationError } from "@marktplatz/schema";
-import { validateRunResult } from "@marktplatz/schema";
+import type { RunResult, ValidationError } from "@skilldiff/schema";
+import { validateRunResult } from "@skilldiff/schema";
 
 export type UploadResult =
   | { ok: true; mode: "mock" | "http"; target: string }

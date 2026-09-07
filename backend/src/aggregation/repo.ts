@@ -1,5 +1,5 @@
 import type { Pool } from "pg";
-import type { Category } from "@marktplatz/schema";
+import type { Category } from "@skilldiff/schema";
 import type { StoredRunResult } from "./metrics.js";
 
 /** Every distinct (skill_id, category) pair that has at least one record — drives both the per-skill metrics endpoint and the export job. */
@@ -22,7 +22,7 @@ export async function fetchStoredRunResults(
   category: Category,
 ): Promise<StoredRunResult[]> {
   const { rows } = await appPool.query(
-    `SELECT r.run_id, r.skill_id, r.category, r.isolation_tier, r.weight,
+    `SELECT r.run_id, r.skill_id, r.skill_content_hash, r.category, r.isolation_tier, r.weight,
             r.with_skill, r.without_skill, r.security_delta,
             r.account_id, a.is_seed_account
      FROM run_results r
@@ -35,6 +35,7 @@ export async function fetchStoredRunResults(
     accountId: row.account_id,
     isSeedAccount: row.is_seed_account,
     skillId: row.skill_id,
+    skillContentHash: row.skill_content_hash,
     category: row.category,
     isolationTier: row.isolation_tier,
     weight: Number(row.weight),

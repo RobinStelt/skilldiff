@@ -22,7 +22,7 @@ export interface ConsentDecision {
  * separate, ADDITIONAL opt-in and is never auto-confirmed.
  */
 export async function showConsentScreen(): Promise<ConsentDecision> {
-  console.log(pc.bold("\nSkill-A/B Marketplace — one-time consent\n"));
+  console.log(pc.bold("\nSkillDiff — one-time consent\n"));
   console.log("After every comparison run, these fields are transmitted automatically:");
   for (const field of TRANSMITTED_FIELDS) {
     console.log(`  • ${field}`);

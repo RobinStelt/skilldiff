@@ -1,4 +1,4 @@
-import type { Category, IsolationTier, RunOutcome, SecurityDelta, SeverityCounts } from "@marktplatz/schema";
+import type { Category, IsolationTier, RunOutcome, SecurityDelta, SeverityCounts } from "@skilldiff/schema";
 import { computeDeltaStats, type DeltaStats } from "./stats.js";
 
 export interface StoredRunResult {
@@ -7,6 +7,8 @@ export interface StoredRunResult {
   /** Briefing 06 point 4 — drives `seedDataMajority` below, kept separate from reputation/weight. */
   isSeedAccount: boolean;
   skillId: string;
+  /** '' for rows stored before this column existed (migration 004) — never a real hash, which is always 64 hex chars. */
+  skillContentHash: string;
   category: Category;
   isolationTier: IsolationTier;
   weight: number;
@@ -46,6 +48,15 @@ export interface SkillCategoryMetrics {
   distinctAccountCount: number;
   /** True when more than half of this slice's sample_size came from Phase-5 seed accounts (briefing 06 point 4). */
   seedDataMajority: boolean;
+  /**
+   * How many distinct `skill_content_hash` values contributed to this
+   * slice — 1 means every measurement really was the same skill content;
+   * >1 means this skill_id was measured across at least two different
+   * versions of the skill, aggregated together anyway (see migration
+   * 004's comment for why this is surfaced, not yet split on). A pure
+   * transparency signal, same spirit as `isolationTierBreakdown`.
+   */
+  distinctContentHashCount: number;
 }
 
 /** critical > high > medium > low — same relative weighting used for the SAST-scan delta everywhere else in this project. */
@@ -110,6 +121,8 @@ export function aggregateSkillCategory(
   const seedCount = records.filter((r) => r.isSeedAccount).length;
   const seedDataMajority = records.length > 0 && seedCount / records.length > 0.5;
 
+  const distinctContentHashCount = new Set(records.map((r) => r.skillContentHash)).size;
+
   return {
     skillId,
     category,
@@ -121,5 +134,6 @@ export function aggregateSkillCategory(
     isolationTierBreakdown,
     distinctAccountCount,
     seedDataMajority,
+    distinctContentHashCount,
   };
 }

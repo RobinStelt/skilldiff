@@ -1,5 +1,5 @@
-import type { RunResult, ValidationError } from "@marktplatz/schema";
-import { validateRunResult } from "@marktplatz/schema";
+import type { RunResult, ValidationError } from "@skilldiff/schema";
+import { validateRunResult } from "@skilldiff/schema";
 import type { AccountStore } from "../accounts/accountStore.js";
 import { verifySignature } from "../canonical.js";
 import { computeWeight } from "../aggregation/weighting.js";

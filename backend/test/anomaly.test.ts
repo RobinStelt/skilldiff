@@ -5,7 +5,7 @@ import {
   detectAnomalies,
   type RunRecordForAnomalyCheck,
 } from "../src/anomaly/detect.js";
-import type { Category } from "@marktplatz/schema";
+import type { Category } from "@skilldiff/schema";
 
 function record(overrides: Partial<RunRecordForAnomalyCheck> & { runId: string }): RunRecordForAnomalyCheck {
   return {

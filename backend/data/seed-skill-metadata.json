@@ -1,0 +1,35 @@
+[
+  {
+    "skillId": "ponytail",
+    "name": "Ponytail",
+    "description": "Encourages simpler implementations and fewer unnecessary abstractions.",
+    "githubUrl": "https://github.com/DietrichGebert/ponytail",
+    "license": "MIT",
+    "maintainer": "DietrichGebert",
+    "declaredCategory": "refactoring",
+    "githubStars": 129027,
+    "githubStarsFetchedAt": "2026-09-06T18:15:16.6382114Z"
+  },
+  {
+    "skillId": "humanizer",
+    "name": "Humanizer",
+    "description": "Agent skill that removes signs of AI-generated writing from text",
+    "githubUrl": "https://github.com/blader/humanizer",
+    "license": "MIT",
+    "maintainer": "blader",
+    "declaredCategory": "docs",
+    "githubStars": 44052,
+    "githubStarsFetchedAt": "2026-09-06T18:15:16.8965152Z"
+  },
+  {
+    "skillId": "caveman",
+    "name": "Caveman",
+    "description": "Uses a deliberately terse writing style for Claude Code responses.",
+    "githubUrl": "https://github.com/JuliusBrussee/caveman",
+    "license": null,
+    "maintainer": "JuliusBrussee",
+    "declaredCategory": "other",
+    "githubStars": 103904,
+    "githubStarsFetchedAt": "2026-09-06T18:15:17.1139918Z"
+  }
+]

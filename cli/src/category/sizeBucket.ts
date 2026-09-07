@@ -1,6 +1,6 @@
 import { readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
-import type { SizeBucket } from "@marktplatz/schema";
+import type { SizeBucket } from "@skilldiff/schema";
 
 const IGNORED_DIRS = new Set(["node_modules", ".git", "dist", "build", ".venv", "__pycache__"]);
 

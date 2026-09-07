@@ -7,6 +7,16 @@ export interface WatchedSkill {
   skillId: string;
   /** Must live outside any --dir used with `run` (Tier A/B requirement, same as --skill-source). */
   skillSourceDir: string;
+  /**
+   * Content hash (skill/contentHash.ts) as of the last `watch add`/`watch
+   * sync` — NOT necessarily what the most recent `run`/shadow measurement
+   * actually used (those always hash fresh, see run.ts/shadow/worker.ts).
+   * Exists so `watch sync` can notice drift and warn instead of silently
+   * re-registering with no comment. `null` for entries added before this
+   * field existed, or added directly via `watch add` before a first sync —
+   * treated as "unknown baseline", never itself a drift warning.
+   */
+  lastKnownHash: string | null;
 }
 
 export interface LocalConfig {
@@ -85,7 +95,11 @@ export function loadOrCreateConfig(configDir: string = defaultConfigDir()): Loca
       // watchedSkills/endpointUrl/claudeBinOverride were added after the
       // first release — fill in defaults for a config.json written before
       // they existed, instead of crashing wherever they're read.
-      return { watchedSkills: [], endpointUrl: null, claudeBinOverride: null, ...parsed } as LocalConfig;
+      const merged = { watchedSkills: [], endpointUrl: null, claudeBinOverride: null, ...parsed } as LocalConfig;
+      // Individual watchedSkills entries written before `lastKnownHash`
+      // existed also need backfilling — same reasoning, one level deeper.
+      merged.watchedSkills = merged.watchedSkills.map((s) => ({ ...s, lastKnownHash: s.lastKnownHash ?? null }));
+      return merged;
     } catch {
       // corrupt file -> create a fresh one instead of crashing
     }

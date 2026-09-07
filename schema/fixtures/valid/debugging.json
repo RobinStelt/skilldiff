@@ -1,19 +1,46 @@
 {
   "skill_id": "skill_bugfinder_v2",
+  "skill_content_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
   "account_id": "acct_9f2a1c",
   "signature": "3a5e...b91c",
   "category": "debugging",
   "size_bucket": "medium",
   "isolation_tier": "A",
-  "with_skill": { "success": true, "tokens": 18234, "duration_sec": 142 },
-  "without_skill": { "success": false, "tokens": 22110, "duration_sec": 301 },
+  "with_skill": {
+    "success": true,
+    "tokens": 18234,
+    "duration_sec": 142
+  },
+  "without_skill": {
+    "success": false,
+    "tokens": 22110,
+    "duration_sec": 301
+  },
   "security_delta": {
-    "with_skill": { "critical": 0, "high": 0, "medium": 1, "low": 2 },
-    "without_skill": { "critical": 0, "high": 1, "medium": 1, "low": 3 }
+    "with_skill": {
+      "critical": 0,
+      "high": 0,
+      "medium": 1,
+      "low": 2
+    },
+    "without_skill": {
+      "critical": 0,
+      "high": 1,
+      "medium": 1,
+      "low": 3
+    }
   },
   "category_metrics": {
-    "with_skill": { "test_coverage_pct": 87.5, "lint_errors": 0, "ci_status": "pass" },
-    "without_skill": { "test_coverage_pct": 71.2, "lint_errors": 3, "ci_status": "fail" }
+    "with_skill": {
+      "test_coverage_pct": 87.5,
+      "lint_errors": 0,
+      "ci_status": "pass"
+    },
+    "without_skill": {
+      "test_coverage_pct": 71.2,
+      "lint_errors": 3,
+      "ci_status": "fail"
+    }
   },
   "content_opt_in": false,
   "content_ref": null,

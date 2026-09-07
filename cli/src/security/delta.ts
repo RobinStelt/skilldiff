@@ -1,4 +1,4 @@
-import type { Category, SecurityDelta, SeverityCounts } from "@marktplatz/schema";
+import type { Category, SecurityDelta, SeverityCounts } from "@skilldiff/schema";
 import { addSeverityCounts, emptySeverityCounts } from "./severityCounts.js";
 import { scanWithBandit, scanWithNpmAudit, scanWithSemgrep } from "./scanners.js";
 

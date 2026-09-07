@@ -1,5 +1,5 @@
 import type { Pool } from "pg";
-import type { RunResult } from "@marktplatz/schema";
+import type { RunResult } from "@skilldiff/schema";
 
 export interface RunResultRepo {
   /** Idempotency guard — a retried upload of the same run_id must not double-count. */
@@ -17,20 +17,21 @@ export function createPgRunResultRepo(appPool: Pool): RunResultRepo {
     async insert(runResult, weight, anomalyFlags) {
       await appPool.query(
         `INSERT INTO run_results (
-           run_id, account_id, skill_id, category, size_bucket, isolation_tier,
+           run_id, account_id, skill_id, skill_content_hash, category, size_bucket, isolation_tier,
            order_randomized, run_timestamp, claude_version, cli_version, cli_build_hash,
            content_opt_in, has_content_ref, with_skill, without_skill, security_delta,
            category_metrics, weight, anomaly_flags
          ) VALUES (
-           $1, $2, $3, $4, $5, $6,
-           $7, $8, $9, $10, $11,
-           $12, $13, $14, $15, $16,
-           $17, $18, $19
+           $1, $2, $3, $4, $5, $6, $7,
+           $8, $9, $10, $11, $12,
+           $13, $14, $15, $16, $17,
+           $18, $19, $20
          )`,
         [
           runResult.run_id,
           runResult.account_id,
           runResult.skill_id,
+          runResult.skill_content_hash,
           runResult.category,
           runResult.size_bucket,
           runResult.isolation_tier,

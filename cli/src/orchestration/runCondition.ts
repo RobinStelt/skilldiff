@@ -1,4 +1,4 @@
-import type { RunOutcome } from "@marktplatz/schema";
+import type { RunOutcome } from "@skilldiff/schema";
 import type { ProcessRunner } from "./processRunner.js";
 
 export interface ClaudeUsage {

@@ -1,4 +1,4 @@
-import type { IsolationTier } from "@marktplatz/schema";
+import type { IsolationTier } from "@skilldiff/schema";
 
 export interface LinkCapability {
   /** Real POSIX symlinks work (e.g. macOS/Linux, or Windows with Developer Mode). */

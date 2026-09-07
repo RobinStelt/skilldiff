@@ -7,6 +7,7 @@ function baseRecord(overrides: Partial<StoredRunResult> = {}): StoredRunResult {
     accountId: "acct_1",
     isSeedAccount: false,
     skillId: "skill_x",
+    skillContentHash: "hash_1",
     category: "debugging",
     isolationTier: "A",
     weight: 1,
@@ -95,5 +96,16 @@ describe("aggregateSkillCategory", () => {
     ];
     expect(aggregateSkillCategory("skill_x", "debugging", majoritySeed).seedDataMajority).toBe(true);
     expect(aggregateSkillCategory("skill_x", "debugging", minoritySeed).seedDataMajority).toBe(false);
+  });
+
+  it("counts distinct content hashes so a skill measured across multiple versions is visible, not silently merged", () => {
+    const sameVersion = [baseRecord({ runId: "r1" }), baseRecord({ runId: "r2" })];
+    expect(aggregateSkillCategory("skill_x", "debugging", sameVersion).distinctContentHashCount).toBe(1);
+
+    const mixedVersions = [
+      baseRecord({ runId: "r1", skillContentHash: "hash_1" }),
+      baseRecord({ runId: "r2", skillContentHash: "hash_2" }),
+    ];
+    expect(aggregateSkillCategory("skill_x", "debugging", mixedVersions).distinctContentHashCount).toBe(2);
   });
 });

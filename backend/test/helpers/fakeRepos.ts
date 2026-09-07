@@ -1,4 +1,4 @@
-import type { RunResult } from "@marktplatz/schema";
+import type { RunResult } from "@skilldiff/schema";
 import type { RunResultRepo } from "../../src/ingestion/runResultRepo.js";
 import type { ContentRepo } from "../../src/ingestion/contentRepo.js";
 

@@ -23,6 +23,7 @@ export interface UpsertSkillMetadataInput {
   license?: string | null;
   maintainer?: string | null;
   declaredCategory?: string | null;
+  githubStars?: number | null;
   createdBy: string;
 }
 
@@ -36,7 +37,9 @@ function rowToMetadata(row: Record<string, unknown>): SkillMetadata {
     maintainer: (row.maintainer as string | null) ?? null,
     declaredCategory: (row.declared_category as string | null) ?? null,
     githubStars: (row.github_stars as number | null) ?? null,
-    githubStarsFetchedAt: row.github_stars_fetched_at ? new Date(row.github_stars_fetched_at as string).toISOString() : null,
+    githubStarsFetchedAt: row.github_stars_fetched_at
+      ? new Date(row.github_stars_fetched_at as string).toISOString()
+      : null,
     createdAt: new Date(row.created_at as string).toISOString(),
     updatedAt: new Date(row.updated_at as string).toISOString(),
   };
@@ -65,8 +68,8 @@ export function createPgSkillMetadataStore(pool: Pool): SkillMetadataStore {
 
     async upsert(input) {
       const { rows } = await pool.query(
-        `INSERT INTO skill_metadata (skill_id, name, description, github_url, license, maintainer, declared_category, created_by)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        `INSERT INTO skill_metadata (skill_id, name, description, github_url, license, maintainer, declared_category, created_by, github_stars)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
          ON CONFLICT (skill_id) DO UPDATE SET
            name = EXCLUDED.name,
            description = EXCLUDED.description,
@@ -74,6 +77,13 @@ export function createPgSkillMetadataStore(pool: Pool): SkillMetadataStore {
            license = EXCLUDED.license,
            maintainer = EXCLUDED.maintainer,
            declared_category = EXCLUDED.declared_category,
+           github_stars = CASE
+             WHEN $10::boolean THEN EXCLUDED.github_stars
+             WHEN skill_metadata.github_url IS DISTINCT FROM EXCLUDED.github_url THEN NULL
+             ELSE skill_metadata.github_stars END,
+           github_stars_fetched_at = CASE
+             WHEN $10::boolean OR skill_metadata.github_url IS DISTINCT FROM EXCLUDED.github_url THEN NULL
+             ELSE skill_metadata.github_stars_fetched_at END,
            updated_at = now()
          RETURNING *`,
         [
@@ -85,6 +95,8 @@ export function createPgSkillMetadataStore(pool: Pool): SkillMetadataStore {
           input.maintainer ?? null,
           input.declaredCategory ?? null,
           input.createdBy,
+          input.githubStars ?? null,
+          input.githubStars !== undefined,
         ],
       );
       return rowToMetadata(rows[0]);
@@ -95,11 +107,10 @@ export function createPgSkillMetadataStore(pool: Pool): SkillMetadataStore {
     },
 
     async setGithubStars(skillId, stars, fetchedAt) {
-      await pool.query(`UPDATE skill_metadata SET github_stars = $2, github_stars_fetched_at = $3 WHERE skill_id = $1`, [
-        skillId,
-        stars,
-        fetchedAt,
-      ]);
+      await pool.query(
+        `UPDATE skill_metadata SET github_stars = $2, github_stars_fetched_at = $3 WHERE skill_id = $1`,
+        [skillId, stars, fetchedAt],
+      );
     },
   };
 }

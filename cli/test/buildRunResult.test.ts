@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { validateRunResult } from "@marktplatz/schema";
+import { validateRunResult } from "@skilldiff/schema";
 import { buildRunResult } from "../src/buildRunResult.js";
 
 const baseRunOutcome = { success: true, tokens: 1000, duration_sec: 30 };
@@ -7,6 +7,7 @@ const baseRunOutcome = { success: true, tokens: 1000, duration_sec: 30 };
 function buildBaseParams(overrides: Partial<Parameters<typeof buildRunResult>[0]> = {}) {
   return {
     skillId: "skill_test",
+    skillContentHash: "a".repeat(64),
     accountId: "acct_test",
     signingSecret: "secret",
     category: "feature" as const,

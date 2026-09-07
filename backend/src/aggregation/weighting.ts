@@ -1,4 +1,4 @@
-import type { IsolationTier } from "@marktplatz/schema";
+import type { IsolationTier } from "@skilldiff/schema";
 import type { Account } from "../accounts/accountStore.js";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;

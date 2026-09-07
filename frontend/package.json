@@ -1,8 +1,8 @@
 {
-  "name": "@marktplatz/frontend",
+  "name": "@skilldiff/frontend",
   "version": "0.1.0",
   "private": true,
-  "description": "Public marketplace frontend for the Skill-A/B-Marketplace: per-skill, per-category delta view with sample-size, isolation-tier, and account-diversity transparency (Phase 4, briefing 05-marktplatz-phase4-frontend.md).",
+  "description": "Public marketplace frontend for SkillDiff: per-skill, per-category delta view with sample-size, isolation-tier, and account-diversity transparency (Phase 4, briefing 05-marktplatz-phase4-frontend.md).",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -12,7 +12,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@marktplatz/schema": "file:../schema",
+    "@skilldiff/schema": "file:../schema",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.26.1"

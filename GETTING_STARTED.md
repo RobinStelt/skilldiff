@@ -20,10 +20,10 @@ bottom for the one platform-specific gotcha found while doing that).
 ## 1. Clone and build the two packages the CLI needs
 
 ```bash
-git clone <this-repo-url> skill-ab-marktplatz
-cd skill-ab-marktplatz
+git clone <this-repo-url> skilldiff
+cd skilldiff
 
-# @marktplatz/schema first — the CLI depends on its BUILT output, not its
+# @skilldiff/schema first — the CLI depends on its BUILT output, not its
 # source (see the "Fix: real build output..." commit if you're curious why
 # that distinction matters here).
 cd schema && npm install && npm run build && cd ..

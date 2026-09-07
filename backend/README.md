@@ -1,6 +1,6 @@
 # Backend — Phase 3 (Ingestion, Aggregation, Reputation, Anomalie-Flagging)
 
-Implementiert `04-marktplatz-phase3-backend.md`. Node.js/TypeScript, Fastify, Postgres — passend zum Stack von `cli/` und `@marktplatz/schema`.
+Implementiert `04-marktplatz-phase3-backend.md`. Node.js/TypeScript, Fastify, Postgres — passend zum Stack von `cli/` und `@skilldiff/schema`.
 
 Für den kompletten Stack (Postgres + Backend + Frontend) in einem Rutsch: `docker compose up --build` im Repo-Root (`../docker-compose.yml`). Der `docker-compose.yml` hier im Verzeichnis startet nur Postgres, für die schnelle Entwicklungsschleife mit `npm run dev`.
 
@@ -16,7 +16,7 @@ npm run dev
 
 ## Architektur
 
-- **`src/canonical.ts`** — Signaturprüfung, über die gemeinsame `canonicalJson`-Funktion aus `@marktplatz/schema` (`schema/src/canonicalJson.ts`) — dieselbe, mit der `cli/src/upload/signature.ts` signiert.
+- **`src/canonical.ts`** — Signaturprüfung, über die gemeinsame `canonicalJson`-Funktion aus `@skilldiff/schema` (`schema/src/canonicalJson.ts`) — dieselbe, mit der `cli/src/upload/signature.ts` signiert.
 - **`src/accounts/`** — Account-Registrierung (`POST /v1/accounts`) und Reputationsdaten.
 - **`src/ingestion/`** — Validierung → Signaturprüfung → Duplikat-Check → Speicherung (`POST /v1/run-results`).
 - **`src/aggregation/`** — Median-Delta + Bootstrap-Konfidenzintervall + Sample-Size, strikt pro Skill+Kategorie getrennt (`src/aggregation/metrics.ts`), plus Reputations-/Tier-/Build-Hash-Gewichtung (`src/aggregation/weighting.ts`).

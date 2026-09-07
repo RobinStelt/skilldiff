@@ -1,4 +1,4 @@
-# Skill-A/B Marketplace
+# SkillDiff
 
 Shows whether a Claude skill actually helps — measured from real usage
 (a task run once with the skill loaded, once without), not stars or a

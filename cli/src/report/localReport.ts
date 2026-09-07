@@ -1,5 +1,5 @@
 import pc from "picocolors";
-import type { RunOutcome } from "@marktplatz/schema";
+import type { RunOutcome } from "@skilldiff/schema";
 
 function percentDelta(withSkill: number, withoutSkill: number): string {
   if (withoutSkill === 0) return withSkill === 0 ? "±0%" : "n/a";

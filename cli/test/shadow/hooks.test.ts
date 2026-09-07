@@ -63,7 +63,7 @@ describe("handleUserPromptSubmit", () => {
   });
 
   it("arms shadow mode with the one watched skill and records whether it's actually linked", () => {
-    const config = baseConfig({ watchedSkills: [{ skillId: "ponytail", skillSourceDir: "C:\\skills\\ponytail" }] });
+    const config = baseConfig({ watchedSkills: [{ skillId: "ponytail", skillSourceDir: "C:\\skills\\ponytail", lastKnownHash: null }] });
     const outcome = handleUserPromptSubmit(
       { session_id: "s2", prompt: "simplify this", cwd: "C:\\project" },
       {
@@ -90,7 +90,7 @@ describe("handleUserPromptSubmit", () => {
   });
 
   it("records without_skill as the foreground condition when the watched skill isn't actually linked", () => {
-    const config = baseConfig({ watchedSkills: [{ skillId: "ponytail", skillSourceDir: "C:\\skills\\ponytail" }] });
+    const config = baseConfig({ watchedSkills: [{ skillId: "ponytail", skillSourceDir: "C:\\skills\\ponytail", lastKnownHash: null }] });
     handleUserPromptSubmit(
       { session_id: "s3", prompt: "task", cwd: "C:\\project" },
       {
@@ -108,7 +108,7 @@ describe("handleUserPromptSubmit", () => {
   it("skips without arming when consent was never given — a hook has no TTY to ask for it (real bug this closes)", () => {
     const config = baseConfig({
       standardConsentGiven: false,
-      watchedSkills: [{ skillId: "ponytail", skillSourceDir: "C:\\skills\\ponytail" }],
+      watchedSkills: [{ skillId: "ponytail", skillSourceDir: "C:\\skills\\ponytail", lastKnownHash: null }],
     });
     const outcome = handleUserPromptSubmit(
       { session_id: "s-no-consent", prompt: "task", cwd: "C:\\project" },
@@ -128,8 +128,8 @@ describe("handleUserPromptSubmit", () => {
   it("never selects more than one skill even when several are watched", () => {
     const config = baseConfig({
       watchedSkills: [
-        { skillId: "a", skillSourceDir: "a-dir" },
-        { skillId: "b", skillSourceDir: "b-dir" },
+        { skillId: "a", skillSourceDir: "a-dir", lastKnownHash: null },
+        { skillId: "b", skillSourceDir: "b-dir", lastKnownHash: null },
       ],
     });
     const outcome = handleUserPromptSubmit(
@@ -164,7 +164,7 @@ describe("handleStop", () => {
     handleUserPromptSubmit(
       { session_id: "s5", prompt: "task", cwd: "C:\\project" },
       {
-        config: baseConfig({ watchedSkills: [{ skillId: "a", skillSourceDir: "a-dir" }] }),
+        config: baseConfig({ watchedSkills: [{ skillId: "a", skillSourceDir: "a-dir", lastKnownHash: null }] }),
         snapshot: (cwd) => `${cwd}-snapshot`,
         isSkillLinked: () => true,
         detectCheckCommand: () => null,
@@ -186,7 +186,7 @@ describe("handleStop", () => {
     handleUserPromptSubmit(
       { session_id: "s6", prompt: "task", cwd: "C:\\project" },
       {
-        config: baseConfig({ watchedSkills: [{ skillId: "a", skillSourceDir: "a-dir" }] }),
+        config: baseConfig({ watchedSkills: [{ skillId: "a", skillSourceDir: "a-dir", lastKnownHash: null }] }),
         snapshot: (cwd) => `${cwd}-snapshot`,
         isSkillLinked: () => true,
         detectCheckCommand: () => null,
@@ -206,7 +206,7 @@ describe("handleStop", () => {
     handleUserPromptSubmit(
       { session_id: "s7", prompt: "task", cwd: "C:\\project" },
       {
-        config: baseConfig({ watchedSkills: [{ skillId: "a", skillSourceDir: "a-dir" }] }),
+        config: baseConfig({ watchedSkills: [{ skillId: "a", skillSourceDir: "a-dir", lastKnownHash: null }] }),
         snapshot: (cwd) => `${cwd}-snapshot`,
         isSkillLinked: () => true,
         detectCheckCommand: () => null,

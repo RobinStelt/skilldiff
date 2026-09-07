@@ -1,0 +1,57 @@
+[
+  {
+    "skillId": "clawscan",
+    "name": "ClawScan",
+    "description": "Command-line scanner that analyzes OpenClaw and ClawHub skill directories for credential leaks, prompt injection patterns, and other security findings.",
+    "githubUrl": "https://github.com/nickoc/clawscan",
+    "license": "MIT",
+    "maintainer": "nickoc",
+    "declaredCategory": "security",
+    "githubStars": 3,
+    "githubStarsFetchedAt": "2026-09-06T18:41:47.2731751Z"
+  },
+  {
+    "skillId": "clawsec-suite",
+    "name": "ClawSec Suite",
+    "description": "Security skill suite with advisory monitoring, signature verification, configuration drift checks, and guided setup for agent protections.",
+    "githubUrl": "https://github.com/prompt-security/clawsec",
+    "license": "AGPL-3.0",
+    "maintainer": "prompt-security",
+    "declaredCategory": "security",
+    "githubStars": 1100,
+    "githubStarsFetchedAt": "2026-09-06T18:41:47.5712431Z"
+  },
+  {
+    "skillId": "playwright-skill",
+    "name": "Playwright Skill",
+    "description": "Enables coding agents to automate browsers with Playwright for website testing and browser workflows.",
+    "githubUrl": "https://github.com/lackeyjb/playwright-skill",
+    "license": "MIT",
+    "maintainer": "lackeyjb",
+    "declaredCategory": "testing",
+    "githubStars": 3107,
+    "githubStarsFetchedAt": "2026-09-06T18:41:47.847789Z"
+  },
+  {
+    "skillId": "notfair-plugin",
+    "name": "Notfair Plugin",
+    "description": "A plugin and skill collection for SEO, generative search optimization, and marketing workflows.",
+    "githubUrl": "https://github.com/nowork-studio/notfair-plugin",
+    "license": "MIT",
+    "maintainer": "nowork-studio",
+    "declaredCategory": "marketing",
+    "githubStars": 3570,
+    "githubStarsFetchedAt": "2026-09-06T18:41:48.1044701Z"
+  },
+  {
+    "skillId": "frontend-design",
+    "name": "Frontend Design",
+    "description": "Guides agents in creating distinctive interfaces with intentional typography, layout, color, and visual direction.",
+    "githubUrl": "https://github.com/anthropics/skills",
+    "license": "Apache-2.0",
+    "maintainer": "anthropics",
+    "declaredCategory": "design",
+    "githubStars": 174828,
+    "githubStarsFetchedAt": "2026-09-06T18:41:48.36444Z"
+  }
+]

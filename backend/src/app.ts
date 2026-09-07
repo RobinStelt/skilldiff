@@ -1,6 +1,6 @@
 import Fastify, { type FastifyInstance } from "fastify";
 import cors from "@fastify/cors";
-import type { Category } from "@marktplatz/schema";
+import type { Category } from "@skilldiff/schema";
 import type { AccountStore } from "./accounts/accountStore.js";
 import type { RunResultRepo } from "./ingestion/runResultRepo.js";
 import type { ContentRepo } from "./ingestion/contentRepo.js";

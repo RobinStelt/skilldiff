@@ -1,6 +1,6 @@
 import { appendFileSync, mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
-import type { RunOutcome } from "@marktplatz/schema";
+import type { RunOutcome } from "@skilldiff/schema";
 import { defaultConfigDir, loadOrCreateConfig } from "../config/localConfig.js";
 import { loadShadowState, deleteShadowState, type ShadowState } from "./state.js";
 import {
@@ -22,6 +22,7 @@ import { determineCategoryMetricsForCondition } from "../metrics/categoryMetrics
 import { buildRunResult } from "../buildRunResult.js";
 import { submitRunResult } from "../upload/submit.js";
 import { getClaudeVersion, getCliBuildHash, getCliVersion } from "../versionInfo.js";
+import { hashSkillSourceDir } from "../skill/contentHash.js";
 
 function log(message: string): void {
   try {
@@ -173,8 +174,14 @@ export async function runShadowWorker(sessionId: string): Promise<void> {
       getCliBuildHash(),
     ]);
 
+    // Hashed fresh here, not read from WatchedSkill.lastKnownHash — that
+    // field is only as current as the last `watch add`/`watch sync`, while
+    // this reflects exactly the content this turn's counterfactual run
+    // actually used.
+    const skillContentHash = hashSkillSourceDir(state.skillSourceDir);
     const runResult = buildRunResult({
       skillId: state.skillId,
+      skillContentHash,
       accountId: config.accountId,
       signingSecret: config.signingSecret,
       category,

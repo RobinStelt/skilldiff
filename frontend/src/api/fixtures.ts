@@ -30,6 +30,7 @@ export const fixtureSkills: SkillDetail[] = [
         isolationTierBreakdown: { A: 60, B: 70, C: 12 },
         distinctAccountCount: 87,
         seedDataMajority: false,
+        distinctContentHashCount: 1,
         exportUrl: "/api/skills/skill_bugfinder_v2/export?category=debugging",
       },
       {
@@ -43,6 +44,7 @@ export const fixtureSkills: SkillDetail[] = [
         isolationTierBreakdown: { A: 2, B: 4, C: 2 },
         distinctAccountCount: 4,
         seedDataMajority: false,
+        distinctContentHashCount: 1,
         exportUrl: "/api/skills/skill_bugfinder_v2/export?category=refactoring",
       },
     ],
@@ -63,6 +65,7 @@ export const fixtureSkills: SkillDetail[] = [
         isolationTierBreakdown: { A: 40, B: 20, C: 4 },
         distinctAccountCount: 3,
         seedDataMajority: false,
+        distinctContentHashCount: 1,
         exportUrl: "/api/skills/skill_doc_writer/export?category=docs",
       },
     ],
@@ -91,6 +94,7 @@ export const fixtureSkills: SkillDetail[] = [
         distinctAccountCount: 22,
         // Most of this sample came from the Phase 6 pre-fill catalog run.
         seedDataMajority: true,
+        distinctContentHashCount: 1,
         exportUrl: "/api/skills/skill_copywriter_pro/export?category=marketing",
       },
     ],
