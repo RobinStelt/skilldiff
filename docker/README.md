@@ -1,3 +1,7 @@
+Looking for the production deployment walkthrough? See
+[`DEPLOY.md`](DEPLOY.md). This file only covers the local-build TLS
+workaround below.
+
 # `docker/extra-ca.crt` — TLS-intercepting proxy/antivirus workaround
 
 If `docker compose up --build` fails inside `npm install` with

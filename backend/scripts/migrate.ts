@@ -4,6 +4,30 @@ import { fileURLToPath } from "node:url";
 import { Client } from "pg";
 
 /**
+ * Role passwords ship as literal `change-me-*` placeholders in
+ * 001_init.sql (fine for the local dev compose). For a real deployment,
+ * substitute real values here via env vars before the SQL runs — the
+ * `CREATE ROLE ... IF NOT EXISTS` guard means this only takes effect the
+ * first time a fresh database is migrated; it does not rotate an
+ * existing role's password on a later run.
+ */
+const ROLE_PASSWORD_OVERRIDES: Record<string, string | undefined> = {
+  "change-me-app-backend": process.env.APP_BACKEND_ROLE_PASSWORD,
+  "change-me-content-writer": process.env.CONTENT_WRITER_ROLE_PASSWORD,
+  "change-me-blindvoting": process.env.BLINDVOTING_ROLE_PASSWORD,
+};
+
+function applyRolePasswordOverrides(sql: string): string {
+  let result = sql;
+  for (const [placeholder, override] of Object.entries(ROLE_PASSWORD_OVERRIDES)) {
+    if (override) {
+      result = result.split(placeholder).join(override);
+    }
+  }
+  return result;
+}
+
+/**
  * Applies db/migrations/*.sql in filename order against
  * MIGRATION_DATABASE_URL (a superuser/owner connection — the migration
  * itself creates the least-privileged runtime roles). Not tracked in a
@@ -26,7 +50,7 @@ async function main(): Promise<void> {
   await client.connect();
   try {
     for (const file of files) {
-      const sql = readFileSync(join(migrationsDir, file), "utf-8");
+      const sql = applyRolePasswordOverrides(readFileSync(join(migrationsDir, file), "utf-8"));
       // eslint-disable-next-line no-console
       console.log(`applying ${file}`);
       await client.query(sql);

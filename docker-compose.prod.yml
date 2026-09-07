@@ -1,0 +1,92 @@
+# Production overlay — runs on the same host/Caddy as the plantwiz stack
+# (../vue in this machine's layout), joining its external `plantwiz-shared`
+# network so that shared Caddy instance can reverse_proxy to this stack's
+# backend/frontend by container name (see Caddyfile there for the
+# skilldiff.<domain> block, and docker/README.md here for the full
+# deployment walkthrough).
+#
+# Differences from docker-compose.yml (the local dev stack):
+#   - No host ports published for postgres/backend/frontend — Caddy is the
+#     only public entry point, reached over `plantwiz-shared`.
+#   - Postgres/migrate credentials come from .env (see .env.prod.example),
+#     not the hardcoded dev defaults.
+#   - Named containers (`marketplace-backend`, `marketplace-frontend`) so
+#     the shared Caddyfile has a stable, collision-free name to address —
+#     "backend"/"frontend" would otherwise collide with plantwiz's own
+#     same-named containers on the shared network.
+#
+# Usage: docker compose -f docker-compose.prod.yml --env-file .env up -d --build
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD}
+      POSTGRES_DB: marktplatz
+    volumes:
+      - marktplatz-postgres-prod:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  migrate:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: build
+    restart: "no"
+    working_dir: /repo/backend
+    command: ["npx", "tsx", "scripts/migrate.ts"]
+    environment:
+      MIGRATION_DATABASE_URL: postgres://postgres:${POSTGRES_SUPERUSER_PASSWORD}@postgres:5432/marktplatz
+      APP_BACKEND_ROLE_PASSWORD: ${APP_BACKEND_ROLE_PASSWORD}
+      CONTENT_WRITER_ROLE_PASSWORD: ${CONTENT_WRITER_ROLE_PASSWORD}
+      BLINDVOTING_ROLE_PASSWORD: ${BLINDVOTING_ROLE_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: marketplace-backend
+    restart: unless-stopped
+    environment:
+      APP_DATABASE_URL: postgres://app_backend:${APP_BACKEND_ROLE_PASSWORD}@postgres:5432/marktplatz
+      CONTENT_WRITER_DATABASE_URL: postgres://content_writer:${CONTENT_WRITER_ROLE_PASSWORD}@postgres:5432/marktplatz
+      PORT: "3000"
+      TRUSTED_CLI_BUILD_HASHES: ${TRUSTED_CLI_BUILD_HASHES:-}
+      AGGREGATION_SOURCE_URL: https://github.com/RobinStelt/marketplace/tree/master/backend/src/aggregation
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - default
+      - plantwiz-shared
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        # Baked in at build time (Vite inlines VITE_*) — same origin as the
+        # site itself, since Caddy routes /api/* and /v1/* on that domain
+        # to marketplace-backend and everything else to this frontend.
+        VITE_BACKEND_URL: https://${MARKETPLACE_DOMAIN}
+    container_name: marketplace-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    networks:
+      - plantwiz-shared
+
+volumes:
+  marktplatz-postgres-prod:
+
+networks:
+  plantwiz-shared:
+    external: true
