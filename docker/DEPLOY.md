@@ -72,13 +72,53 @@ calls. Both are served by the same backend container; everything else
 - **Point contributors' CLI at it**: `skill-ab config set endpoint
   https://skilldiff.robin-steltmann.de/v1/run-results` (see
   `../GETTING_STARTED.md`).
-- **Fill in the legal-page placeholders** (`../PRIVACY.md`, `../TERMS.md`,
-  and their frontend mirrors) with the real operator name/address/contact
-  email before treating this as a public launch, not just a reachable
-  server — see those files' own draft notices.
+- **Legal pages** (`../PRIVACY.md`, `../TERMS.md`, `../IMPRESSUM.md`, and
+  their frontend mirrors) have the real operator details filled in
+  already — still drafts, not a substitute for real legal review; see
+  each file's own draft notice before treating this as a public launch.
 - **Smoke-test for real**: `curl https://skilldiff.robin-steltmann.de/api/skills`
   should return `{"skills":[],"nextCursor":null}` (or real data, once
-  seeded) rather than a TLS or 502 error.
+  seeded) rather than a TLS or 502 error. `curl
+  https://skilldiff.robin-steltmann.de/health` should return `{"status":"ok"}`
+  — see "Monitoring" below for wiring that into Uptime Kuma.
+
+## Backups
+
+The `backup` service (`../docker-compose.prod.yml`, `../scripts/backup.sh`)
+runs a nightly `pg_dump` of the `marktplatz` database into the
+`marktplatz-backups` volume, keeping the last 7 daily + 4 weekly dumps —
+same rotation scheme as the sibling plantwiz deployment's own backup
+service, adapted from `mysqldump` to `pg_dump`. Verified for real (not
+just read): dumped a seeded table with `backup.sh`, restored it into a
+separate, fresh Postgres container with `restore.sh`, confirmed the row
+came back.
+
+```bash
+# List backups
+docker compose -f docker-compose.prod.yml exec backup ls -lh /backups
+
+# Restore one (overwrites the live database!)
+docker compose -f docker-compose.prod.yml exec backup \
+  bash /usr/local/bin/restore.sh /backups/daily-2026-09-07_0300.sql.gz
+docker compose -f docker-compose.prod.yml restart backend
+```
+
+These backups live on the same server as the database. An offsite copy
+(e.g. synced to object storage) isn't set up — if the server is lost, the
+backups are lost with it. Worth doing before real contributor data
+accumulates, not after.
+
+## Monitoring
+
+`GET /health` on the backend (see `../backend/src/app.ts`) returns
+`{"status":"ok"}` with no database/auth dependency — cheap enough to poll
+every minute. The plantwiz stack already runs Uptime Kuma
+(`https://monitor.robin-steltmann.de` — see `../../vue/OPS.md`); add a
+monitor there pointed at
+`https://skilldiff.robin-steltmann.de/health` with a keyword check on
+`"ok"`, the same pattern plantwiz uses for its own `/api/health`. Not
+done automatically here — it's a few clicks in Uptime Kuma's own UI, not
+something this repo can configure for you.
 
 ## Standalone server (no existing Caddy/plantwiz-shared)
 

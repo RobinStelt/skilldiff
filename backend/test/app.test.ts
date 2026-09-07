@@ -41,6 +41,15 @@ function makeApp(overrides: Partial<AppDeps> = {}) {
   return { app, accountStore, runResultRepo, contentRepo };
 }
 
+describe("GET /health", () => {
+  it("answers ok with no dependency on the database", async () => {
+    const { app } = makeApp();
+    const res = await app.inject({ method: "GET", url: "/health" });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual({ status: "ok" });
+  });
+});
+
 describe("POST /v1/accounts", () => {
   it("registers a new account", async () => {
     const { app } = makeApp();
@@ -105,6 +114,22 @@ describe("POST /v1/run-results", () => {
     const runResult = buildSignedRunResult("s3cret");
     const res = await app.inject({ method: "POST", url: "/v1/run-results", payload: runResult });
     expect(res.statusCode).toBe(201);
+  });
+
+  it("rate-limits a burst of uploads from the same client (upload-spam protection)", async () => {
+    const { app } = makeApp();
+    const attempt = () =>
+      app.inject({ method: "POST", url: "/v1/run-results", payload: { not: "a run result" } });
+
+    // Capped at 30/minute (app.ts) — the rate-limit hook runs before body
+    // validation, so an invalid payload still counts against the bucket
+    // and still demonstrates the limiter firing on request 31.
+    for (let i = 0; i < 30; i++) {
+      const res = await attempt();
+      expect(res.statusCode).toBe(400);
+    }
+    const res = await attempt();
+    expect(res.statusCode).toBe(429);
   });
 });
 
@@ -305,6 +330,65 @@ describe("POST /api/admin/login", () => {
 
     const meRes = await app.inject({ method: "GET", url: "/api/admin/me", headers: { cookie } });
     expect(meRes.statusCode).toBe(200);
+  });
+
+  it("marks the session cookie Secure when the request arrives via a trusted HTTPS-terminating proxy", async () => {
+    // Regression test for trustProxy: production sits behind Caddy, which
+    // terminates TLS and forwards over plain HTTP internally — without
+    // Fastify's trustProxy option, request.protocol would see that
+    // internal HTTP hop and never set Secure, even on the real, publicly
+    // HTTPS site (see buildApp's comment in app.ts).
+    const adminUserStore = createFakeAdminUserStore([
+      { id: "admin_1", username: "robin", passwordHash: hashPassword("correct-password-123") },
+    ]);
+    const { app } = makeApp({ adminUserStore });
+
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/admin/login",
+      headers: { "x-forwarded-proto": "https" },
+      payload: { username: "robin", password: "correct-password-123" },
+    });
+    expect(res.statusCode).toBe(200);
+    const setCookie = String(res.headers["set-cookie"]);
+    expect(setCookie).toMatch(/secure/i);
+  });
+
+  it("does not mark the session cookie Secure for a plain HTTP request (e.g. local dev)", async () => {
+    const adminUserStore = createFakeAdminUserStore([
+      { id: "admin_1", username: "robin", passwordHash: hashPassword("correct-password-123") },
+    ]);
+    const { app } = makeApp({ adminUserStore });
+
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/admin/login",
+      payload: { username: "robin", password: "correct-password-123" },
+    });
+    expect(res.statusCode).toBe(200);
+    const setCookie = String(res.headers["set-cookie"]);
+    expect(setCookie).not.toMatch(/secure/i);
+  });
+
+  it("rate-limits repeated login attempts from the same client (brute-force protection)", async () => {
+    const { app } = makeApp();
+    const attempt = () =>
+      app.inject({
+        method: "POST",
+        url: "/api/admin/login",
+        payload: { username: "nobody", password: "whatever12345" },
+      });
+
+    // adminRoutes.ts caps this route at 10/minute — the first 10 attempts
+    // (all wrong credentials here, but rate-limiting counts requests, not
+    // outcomes) should still each be a normal 401, the 11th should be
+    // rejected by the rate limiter before it even reaches the handler.
+    for (let i = 0; i < 10; i++) {
+      const res = await attempt();
+      expect(res.statusCode).toBe(401);
+    }
+    const res = await attempt();
+    expect(res.statusCode).toBe(429);
   });
 });
 

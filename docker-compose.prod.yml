@@ -68,6 +68,29 @@ services:
       - default
       - plantwiz-shared
 
+  # Nightly pg_dump of the marktplatz database, with rotation — see
+  # scripts/backup.sh. No prod deployment had this before; contributor
+  # upload data (run_results, run_result_content) living only in one
+  # unbacked-up volume was a real loss risk.
+  backup:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    entrypoint: ["bash", "/usr/local/bin/backup.sh", "--daemon"]
+    environment:
+      DB_HOST: postgres
+      DB_PASSWORD: ${POSTGRES_SUPERUSER_PASSWORD}
+      DB_NAME: marktplatz
+      BACKUP_HOUR: "3" # UTC
+      DAILY_KEEP: "7"
+      WEEKLY_KEEP: "4"
+    volumes:
+      - ./scripts/backup.sh:/usr/local/bin/backup.sh:ro
+      - ./scripts/restore.sh:/usr/local/bin/restore.sh:ro
+      - marktplatz-backups:/backups
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   frontend:
     build:
       context: .
@@ -86,6 +109,7 @@ services:
 
 volumes:
   marktplatz-postgres-prod:
+  marktplatz-backups:
 
 networks:
   plantwiz-shared:

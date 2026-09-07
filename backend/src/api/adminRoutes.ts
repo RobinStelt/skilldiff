@@ -48,7 +48,13 @@ export async function registerAdminRoutes(app: FastifyInstance, deps: AdminRoute
         return true;
       }
 
-      admin.post("/login", async (request, reply) => {
+      admin.post("/login", {
+        // Credential-stuffing/brute-force protection. Registered globally
+        // on the root app instance (app.ts) via @fastify/rate-limit, which
+        // still honors a per-route override from an encapsulated child
+        // scope like this one.
+        config: { rateLimit: { max: 10, timeWindow: "1 minute" } },
+      }, async (request, reply) => {
         const body = request.body as { username?: unknown; password?: unknown } | undefined;
         if (typeof body?.username !== "string" || typeof body.password !== "string") {
           return reply.code(400).send({ error: "username and password are required" });
