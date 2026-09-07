@@ -39,6 +39,7 @@ Beide betrafen das Zusammenspiel mit `cli/src/upload/signature.ts` (Briefing 03)
 ```bash
 npm test                # Unit-Tests, keine Datenbank nötig
 npm run test:integration  # braucht laufendes Postgres + TEST_DATABASE_URL_APP_ROLE / TEST_DATABASE_URL_CONTENT_WRITER
+                           # (optional: MIGRATION_DATABASE_URL, sonst räumt anomaly.test.ts seine Testzeilen nicht auf)
 ```
 
-`test/integration/permissions.test.ts` verifiziert das Akzeptanzkriterium, dass der `app_backend`-Rolle der Zugriff auf `run_result_content` mit einem echten Permission-Fehler verweigert wird.
+`test/integration/permissions.test.ts` verifiziert das Akzeptanzkriterium, dass der `app_backend`-Rolle der Zugriff auf `run_result_content` mit einem echten Permission-Fehler verweigert wird. `test/integration/anomaly.test.ts` spielt ein echtes Manipulationsmuster (Account registrieren, 20+ echt signierte Uploads für denselben Skill mit durchgehend "Erfolg") über die echte HTTP-Route durch und prüft, dass der Batch-Anomalie-Scan es markiert **und** dass das nächste Upload desselben Accounts danach ein messbar niedrigeres `weight` bekommt — nicht nur, dass irgendwo ein Flag gesetzt wird.
