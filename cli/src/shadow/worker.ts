@@ -148,6 +148,7 @@ export async function runShadowWorker(sessionId: string): Promise<void> {
       const checkResult = await realProcessRunner.run(state.checkCommand.cmd, state.checkCommand.args, {
         cwd: state.cwd,
         env: process.env,
+        useShell: true,
       });
       foregroundSuccess = checkResult.exitCode === 0;
     }

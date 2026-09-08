@@ -76,7 +76,11 @@ export async function runCondition(params: RunConditionParams): Promise<RunOutco
 
   let success: boolean | null = null;
   if (checkCommand) {
-    const checkResult = await runner.run(checkCommand.cmd, checkCommand.args, { cwd: workDir, env });
+    // useShell: true here, never for the `claude` call above — see
+    // processRunner.ts's comment for why those two calls need opposite
+    // settings (npm needs shell resolution; claude's task argument
+    // breaks under it).
+    const checkResult = await runner.run(checkCommand.cmd, checkCommand.args, { cwd: workDir, env, useShell: true });
     success = checkResult.exitCode === 0;
   }
 
