@@ -1,5 +1,5 @@
 import pc from "picocolors";
-import type { RunOutcome } from "@skilldiff/schema";
+import type { Execution, RunOutcome } from "@skilldiff/schema";
 
 function percentDelta(withSkill: number, withoutSkill: number): string {
   if (withoutSkill === 0) return withSkill === 0 ? "±0%" : "n/a";
@@ -18,9 +18,12 @@ function successText(success: boolean | null): string {
  * marketplace upload, the CLI shows directly in the console what the skill
  * did for THIS user.
  */
-export function showLocalDelta(params: { skillId: string; withSkill: RunOutcome; withoutSkill: RunOutcome }): void {
+export function showLocalDelta(params: { execution: Execution; skillId: string; withSkill: RunOutcome; withoutSkill: RunOutcome }): void {
   const { skillId, withSkill, withoutSkill } = params;
   console.log(pc.bold(`\nResult for skill "${skillId}":\n`));
+  console.log(`  Agent:           ${params.execution.agent}`);
+  console.log(`  Model:           ${params.execution.model}`);
+  console.log(`  Reasoning:       ${params.execution.reasoning_effort ?? "default"}`);
   console.log(`  Tokens:          with ${withSkill.tokens} / without ${withoutSkill.tokens}  (${percentDelta(withSkill.tokens, withoutSkill.tokens)} tokens)`);
   console.log(`  Duration:        with ${withSkill.duration_sec}s / without ${withoutSkill.duration_sec}s  (${percentDelta(withSkill.duration_sec, withoutSkill.duration_sec)} time)`);
   console.log(`  Success with:    ${successText(withSkill.success)}`);

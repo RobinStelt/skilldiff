@@ -7,7 +7,7 @@ const TRANSMITTED_FIELDS = [
   "with_skill/without_skill: success, tokens, duration_sec",
   "security_delta (only counts per severity level, never the full scan report)",
   "category_metrics (category-specific numbers, never free text)",
-  "run_id, order_randomized, timestamp, claude_version, cli_version, cli_build_hash",
+  "run_id, order_randomized, timestamp, execution (agent, model, agent_version, reasoning_effort), claude_version (legacy/Claude only), cli_version, cli_build_hash",
 ];
 
 export interface ConsentDecision {

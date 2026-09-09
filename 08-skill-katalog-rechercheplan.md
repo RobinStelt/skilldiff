@@ -82,9 +82,10 @@ Seiten auf andere öffentliche Quellen wechseln.
    Quellenhinweis. Jede Zahl erhält Quelle und Abrufdatum. Unsichere Kandidaten
    bleiben als `needs_review` außerhalb des Imports.
 6. **Katalog auf größere Mengen vorbereiten:** Die öffentliche API liefert
-   derzeit 20 Einträge je Seite, die Übersicht nutzt `nextCursor` noch nicht.
-   Vor dem Import von über 20 Einträgen Nachladen/Paginierung samt Fehlerbehandlung
-   ergänzen. Katalogsuche und Themenfilter für Metadaten separat von Filtern
+   derzeit 20 Einträge je Seite. Die Übersicht nutzt seit 08.09.2026 `nextCursor`
+   für eine Vor-/Zurück-Navigation mit Seitenanzeige. Jede Seite ersetzt die
+   Einträge; Fehlerbehandlung und Zurücksetzen bei Filterwechsel sind enthalten.
+   Katalogsuche und Themenfilter für Metadaten separat von Filtern
    für gemessene Aufgabenkategorien behandeln. Skill, Suite, Plugin und Tool
    bei größerem Bestand als eigene Typen in Datenmodell und Admin abbilden.
 7. **Import in Paketen:** Vorschau mit neuen IDs, Dubletten und offenen Feldern
@@ -132,8 +133,9 @@ ein Plugin-Paket darf nicht als einzelner Skill ausgegeben werden.
 - Deutsches Rechercheprotokoll: Aufwand pro Paket, akzeptierte neue Treffer,
   fehlende Themen und Stichprobenergebnis.
 
-Diese Artefakte und die Erweiterungen ab Schritt 6 sind geplant, noch nicht
-implementiert. Der nächste Arbeitsauftrag ist der Pilot mit 25 Kandidaten.
+Diese Artefakte und die Erweiterungen ab Schritt 6 sind bis auf die
+Frontend-Paginierung geplant, noch nicht implementiert. Der nächste
+Arbeitsauftrag ist der Pilot mit 25 Kandidaten.
 Nach dem Pilot Aufwand pro akzeptiertem Skill bestimmen und auf 100 bzw. 500
 hochrechnen. Nur unklare Fälle an den Hauptagenten geben; alle Routineabrufe
 bleiben beim Skript. Es werden keine automatischen Abo-Resets, zusätzlichen

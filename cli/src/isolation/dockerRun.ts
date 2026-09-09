@@ -1,3 +1,4 @@
+import type { Agent } from "@skilldiff/schema";
 import type { Condition } from "./types.js";
 
 const WORKSPACE_MOUNT = "/workspace";
@@ -19,6 +20,8 @@ const SKILL_MOUNT = "/skill-source";
  */
 export function buildDockerRunArgs(params: {
   runtime: "docker" | "podman";
+  agent?: Agent;
+  codexHome?: string;
   image: string;
   workDir: string;
   skillSourceDir: string | null;
@@ -42,8 +45,13 @@ export function buildDockerRunArgs(params: {
     `HOME=/home/runner`,
   ];
 
+  args.push("-e", "SKILL_AB_INTERNAL_RUN=1");
+  if (params.agent === "codex") {
+    args.push("-e", "CODEX_HOME=/home/runner/.codex");
+    if (params.codexHome) args.push("-v", `${params.codexHome}:/home/runner/.codex`);
+  }
   if (process.env[apiKeyEnvVar]) {
-    args.push("-e", `${apiKeyEnvVar}=${process.env[apiKeyEnvVar]}`);
+    args.push("-e", apiKeyEnvVar);
   }
 
   if (condition === "with_skill") {
@@ -52,7 +60,7 @@ export function buildDockerRunArgs(params: {
     }
     // Only THIS ONE skill folder is mounted — not the whole skill vault,
     // otherwise the model inside the container could see sibling skills.
-    args.push("-v", `${skillSourceDir}:${SKILL_MOUNT}/${skillId}:ro`);
+    args.push("-v", `${skillSourceDir}:${WORKSPACE_MOUNT}/${params.agent === "codex" ? ".agents" : ".claude"}/skills/${skillId}:ro`);
   }
 
   args.push(image, ...claudeInvocationArgs);

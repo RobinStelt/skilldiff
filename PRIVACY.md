@@ -16,7 +16,7 @@ Breuna, Germany, robin.steltmann@googlemail.com — see also
 
 ## What this service is
 
-SkillDiff measures whether a Claude Code skill helps with
+SkillDiff measures whether a Claude Code or Codex skill helps with
 real tasks, by running a task once with the skill loaded and once without,
 automatically, and aggregating the results across many contributors. This
 page covers data handled by the **backend and website**. The **CLI**
@@ -30,12 +30,12 @@ uploads — see "What the CLI sends" below for exactly what that is.
 | Data | What it is | Why |
 |---|---|---|
 | Pseudonymous account ID | A random identifier generated on your machine — no name, email, or other identity | Attributing runs to one contributor for reputation weighting and anomaly detection, without knowing who you are |
-| Run metadata | Skill ID, task category, isolation tier, token counts, duration, success/failure, size bucket, timestamps, CLI/Claude version | The actual measurement — this is the product |
+| Run metadata | Skill ID, task category, isolation tier, token counts, duration, success/failure, size bucket, timestamps, CLI/agent version, agent, model and reasoning setting | The actual measurement — this is the product |
 | Category-specific metrics | Test coverage, lint errors, cyclomatic complexity, readability score, or similar, depending on task category | Same as above |
 | Security scan counts | Number of findings by severity, with the skill vs. without — never the findings' content or the code itself | Measuring whether a skill introduces or fixes vulnerabilities, without storing your code |
 | A cryptographic signature | Proves the upload wasn't altered in transit | Integrity, not identity |
 
-**We do not receive your code, your prompts, or Claude's responses** as
+**We do not receive your code, your prompts, or the agent's responses** as
 part of a normal upload. The CLI validates every upload against a strict
 schema before sending it; content isn't part of that schema unless you
 separately opt in (next section).

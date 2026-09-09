@@ -11,7 +11,7 @@ _Last updated: 2026-09-07. Operator: Robin Steltmann, Schulstraße 13,
 ## What this is
 
 SkillDiff ("the Service") shows measured, aggregated
-comparisons of Claude Code skills — each based on a task run once with a
+comparisons of Claude Code and Codex skills — each based on a task run once with a
 skill loaded and once without, on a contributor's own machine. The
 `skill-ab` CLI (source: https://github.com/RobinStelt/skilldiff, license:
 MIT, see [`LICENSE`](LICENSE)) is what performs and uploads these
@@ -21,7 +21,7 @@ comparisons; the website displays the aggregated results.
 
 You are solely responsible for having the right to run the CLI, and any
 skill under test, against the code, files, and tasks you point it at. The
-CLI does not upload your code or Claude's output as part of a normal run
+CLI does not upload your code or the agent's output as part of a normal run
 (see [`PRIVACY.md`](PRIVACY.md)) — but you still need the underlying
 rights to process that content locally in the first place, including
 where it involves a third party's proprietary or confidential material.

@@ -1,6 +1,6 @@
 import type { Pool } from "pg";
 import { fetchStoredRunResults, listSkillCategoryPairs } from "../aggregation/repo.js";
-import { aggregateSkillCategory, type SkillCategoryMetrics } from "../aggregation/metrics.js";
+import { aggregateExecutionGroups, type SkillCategoryMetrics } from "../aggregation/metrics.js";
 
 /**
  * Read-only export of aggregated numbers only — never raw records, never
@@ -14,7 +14,7 @@ export async function getAllSkillMetrics(appPool: Pool): Promise<SkillCategoryMe
   const results: SkillCategoryMetrics[] = [];
   for (const pair of pairs) {
     const records = await fetchStoredRunResults(appPool, pair.skillId, pair.category);
-    results.push(aggregateSkillCategory(pair.skillId, pair.category, records));
+    results.push(...aggregateExecutionGroups(pair.skillId, pair.category, records));
   }
   return results;
 }
@@ -27,6 +27,9 @@ function csvCell(value: string | number): string {
 const CSV_HEADER = [
   "skill_id",
   "category",
+  "agent",
+  "model",
+  "reasoning_effort",
   "sample_size",
   "success_delta_median",
   "success_delta_ci_low",
@@ -50,6 +53,9 @@ export function toCsv(metrics: readonly SkillCategoryMetrics[]): string {
       [
         csvCell(m.skillId),
         csvCell(m.category),
+        csvCell(m.execution?.agent ?? "claude"),
+        csvCell(m.execution?.model ?? "unknown"),
+        csvCell(m.execution?.reasoning_effort ?? ""),
         csvCell(m.sampleSize),
         csvCell(m.successDelta.medianDelta ?? ""),
         csvCell(m.successDelta.confidenceInterval?.low ?? ""),

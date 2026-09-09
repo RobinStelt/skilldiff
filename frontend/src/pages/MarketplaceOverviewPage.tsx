@@ -1,4 +1,6 @@
-import { useEffect, useState } from "react";
+import type { ExecutionFilter as Filter } from "@skilldiff/schema";
+import { ExecutionFilter, executionLabel } from "../components/ExecutionFilter.js";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import type { MarketplaceApiClient } from "../api/client.js";
 import type { Category, SkillSummary } from "../api/types.js";
@@ -18,27 +20,70 @@ const CATEGORY_LABEL: Record<string, string> = {
 };
 
 export function MarketplaceOverviewPage({ apiClient }: { apiClient: MarketplaceApiClient }) {
+  const [executionFilter, setExecutionFilter] = useState<Filter>({});
   const [category, setCategory] = useState<Category | null>(null);
   const [skills, setSkills] = useState<SkillSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [requestVersion, setRequestVersion] = useState(0);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [loadingPage, setLoadingPage] = useState(false);
+  const [failedPage, setFailedPage] = useState<number | null>(null);
+  const [page, setPage] = useState(0);
+  const [pageCursors, setPageCursors] = useState<(string | null)[]>([null]);
+  const generation = useRef(0);
+  const pageRequest = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
+    generation.current += 1;
+    pageRequest.current = false;
     setSkills(null);
     setError(null);
+    setNextCursor(null);
+    setLoadingPage(false);
+    setFailedPage(null);
+    setPage(0);
+    setPageCursors([null]);
     apiClient
-      .listSkills({ category: category ?? undefined })
+      .listSkills({ category: category ?? undefined, ...executionFilter })
       .then((response) => {
-        if (!cancelled) setSkills(response.skills);
+        if (!cancelled) {
+          setSkills(response.skills);
+          setNextCursor(response.nextCursor);
+        }
       })
       .catch((err: unknown) => {
         if (!cancelled) setError(err instanceof Error ? err.message : String(err));
       });
     return () => {
       cancelled = true;
+      generation.current += 1;
     };
-  }, [apiClient, category, requestVersion]);
+  }, [apiClient, category, requestVersion, executionFilter]);
+
+  async function goToPage(targetPage: number) {
+    const cursor = targetPage === page + 1 ? nextCursor : pageCursors[targetPage];
+    if (targetPage < 0 || cursor === undefined || (targetPage > 0 && cursor === null) || pageRequest.current) return;
+    const currentGeneration = generation.current;
+    pageRequest.current = true;
+    setLoadingPage(true);
+    setFailedPage(null);
+    try {
+      const response = await apiClient.listSkills({ category: category ?? undefined, cursor, ...executionFilter });
+      if (generation.current !== currentGeneration) return;
+      setSkills(response.skills);
+      setPage(targetPage);
+      setPageCursors((previous) => [...previous.slice(0, targetPage), cursor]);
+      setNextCursor(response.nextCursor);
+    } catch {
+      if (generation.current === currentGeneration) setFailedPage(targetPage);
+    } finally {
+      if (generation.current === currentGeneration) {
+        pageRequest.current = false;
+        setLoadingPage(false);
+      }
+    }
+  }
 
   return (
     <main className="overview-page">
@@ -61,6 +106,7 @@ export function MarketplaceOverviewPage({ apiClient }: { apiClient: MarketplaceA
           </a>
         </div>
 
+        <ExecutionFilter value={executionFilter} onChange={setExecutionFilter} />
         <CategoryFilter selected={category} onChange={setCategory} />
 
         {error && (
@@ -138,8 +184,8 @@ export function MarketplaceOverviewPage({ apiClient }: { apiClient: MarketplaceA
                       <span className="skill-list__category-chip">No comparisons yet</span>
                     )}
                     {skill.categories.map((c) => (
-                      <span key={c.category} className="skill-list__category-chip">
-                        {CATEGORY_LABEL[c.category] ?? c.category}:{" "}
+                      <span key={`${c.category}-${c.execution?.agent}-${c.execution?.model}-${c.execution?.reasoning_effort}`} className="skill-list__category-chip">
+                        {c.execution && `${executionLabel(c.execution)} · `}{CATEGORY_LABEL[c.category] ?? c.category}:{" "}
                         {hasEnoughData(c.sampleSize) ? `n=${c.sampleSize}` : "not enough data yet"}
                       </span>
                     ))}
@@ -166,6 +212,36 @@ export function MarketplaceOverviewPage({ apiClient }: { apiClient: MarketplaceA
             </li>
           ))}
         </ul>
+        {skills !== null && (page > 0 || nextCursor !== null) && (
+          <nav className="catalog-pagination" aria-label="Catalog pagination">
+            {failedPage !== null && (
+              <p role="alert">
+                We couldn’t load page {failedPage + 1}.{" "}
+                <button className="button button--outline button--small" type="button"
+                  onClick={() => void goToPage(failedPage)}>Try again</button>
+              </p>
+            )}
+            <button
+              className="button button--outline button--small"
+              type="button"
+              disabled={loadingPage || page === 0}
+              onClick={() => void goToPage(page - 1)}
+            >
+              Previous
+            </button>
+            <span role="status" className="catalog-pagination__status">
+              {loadingPage ? "Loading page…" : `Page ${page + 1}`}
+            </span>
+            <button
+              className="button button--outline button--small"
+              type="button"
+              disabled={loadingPage || nextCursor === null}
+              onClick={() => void goToPage(page + 1)}
+            >
+              Next
+            </button>
+          </nav>
+        )}
         <p className="catalog-footnote">
           <span className="status-dot" /> At least 20 runs per category before a numeric result is
           highlighted.

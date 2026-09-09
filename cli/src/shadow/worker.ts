@@ -1,4 +1,6 @@
-import { appendFileSync, mkdirSync, rmSync } from "node:fs";
+import { buildAgentArgs } from "../agents/adapter.js";
+import { applyCopyGate, isolatedAgentEnv } from "../isolation/gating.js";
+import { appendFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import type { RunOutcome } from "@skilldiff/schema";
 import { defaultConfigDir, loadOrCreateConfig } from "../config/localConfig.js";
@@ -12,7 +14,7 @@ import {
   buildDockerRunArgs,
   type Condition,
 } from "../isolation/index.js";
-import { freshWorkDirCopy, type ConditionOutcome } from "../orchestration/runOrchestrator.js";
+import { freshWorkDirCopy, removeWorkDirCopy, type ConditionOutcome } from "../orchestration/runOrchestrator.js";
 import { runCondition } from "../orchestration/runCondition.js";
 import { realProcessRunner } from "../orchestration/processRunner.js";
 import { detectCategory } from "../category/detectCategory.js";
@@ -79,16 +81,19 @@ export async function runShadowWorker(sessionId: string): Promise<void> {
   let isolatedHome: ReturnType<typeof createIsolatedHome> | undefined;
 
   try {
-    const tierResult = await detectIsolationTier();
+    const agent = state.execution?.agent ?? "claude";
+    log(`session ${sessionId}: agent=${agent} model=${state.execution?.model ?? "unknown"} reasoning=${state.execution?.reasoning_effort ?? "default"}`);
+    const tierResult = await detectIsolationTier({ skipContainer: agent === "codex" });
     const counterfactualCondition = opposite(state.foregroundCondition);
     counterfactualDirCopy = freshWorkDirCopy(state.beforeSnapshotDir, counterfactualCondition);
-    isolatedHome = createIsolatedHome();
+    isolatedHome = createIsolatedHome(undefined, agent);
 
     if (tierRequiresOutsideSourceCheck(tierResult.tier)) {
       assertSkillSourceOutsideWorkDir(counterfactualDirCopy, state.skillSourceDir);
     }
     if (tierResult.tier === "B") {
       applyTierBGate({
+        agent,
         workDir: counterfactualDirCopy,
         skillId: state.skillId,
         skillSourceDir: state.skillSourceDir,
@@ -97,21 +102,8 @@ export async function runShadowWorker(sessionId: string): Promise<void> {
       });
     }
 
-    // See commands/run.ts's identical addition for why: without this, a
-    // headless `claude -p` has no way to approve an Edit/Write tool call
-    // (no TTY to prompt), so every real task silently can't get done in
-    // either condition — safe here because `workDirCopy` is always this
-    // run's disposable copy, never the user's real project.
-    const claudeArgs = [
-      "-p",
-      state.task,
-      "--output-format",
-      "json",
-      "--setting-sources",
-      "project",
-      "--permission-mode",
-      "acceptEdits",
-    ];
+    if (tierResult.tier !== "B") applyCopyGate(counterfactualDirCopy, state.skillId, tierResult.tier === "C" ? state.skillSourceDir : null, counterfactualCondition, agent);
+    const claudeArgs = buildAgentArgs(state.execution ?? { agent: "claude", model: "unknown", agent_version: "unknown", reasoning_effort: null }, state.task);
     const invocation =
       tierResult.tier === "A"
         ? {
@@ -119,6 +111,7 @@ export async function runShadowWorker(sessionId: string): Promise<void> {
             args: buildDockerRunArgs({
               runtime: tierResult.dockerAvailable ? "docker" : "podman",
               image: "skill-ab/claude-runner:latest",
+              agent,
               workDir: counterfactualDirCopy,
               skillSourceDir: counterfactualCondition === "with_skill" ? state.skillSourceDir : null,
               skillId: state.skillId,
@@ -129,9 +122,11 @@ export async function runShadowWorker(sessionId: string): Promise<void> {
           }
         : { bin: state.claudeBin, args: claudeArgs };
 
-    const env: NodeJS.ProcessEnv = { ...process.env, HOME: isolatedHome.path, USERPROFILE: isolatedHome.path };
+    const env = isolatedAgentEnv(isolatedHome.path, agent);
     const counterfactualOutcome = await runCondition({
+      execution: state.execution,
       runner: realProcessRunner,
+      agent,
       claudeBin: invocation.bin,
       claudeArgs: invocation.args,
       workDir: counterfactualDirCopy,
@@ -146,7 +141,7 @@ export async function runShadowWorker(sessionId: string): Promise<void> {
     let foregroundSuccess: boolean | null = null;
     if (state.checkCommand) {
       const checkResult = await realProcessRunner.run(state.checkCommand.cmd, state.checkCommand.args, {
-        cwd: state.cwd,
+        cwd: state.foregroundSnapshotDir ?? state.cwd,
         env: process.env,
         useShell: true,
       });
@@ -160,7 +155,7 @@ export async function runShadowWorker(sessionId: string): Promise<void> {
 
     const { withSkill, withoutSkill } = resolveConditionOutcomes(
       state.foregroundCondition,
-      { runOutcome: foregroundOutcome, workDirCopy: state.cwd },
+      { runOutcome: foregroundOutcome, workDirCopy: state.foregroundSnapshotDir ?? state.cwd },
       { runOutcome: counterfactualOutcome, workDirCopy: counterfactualDirCopy },
     );
 
@@ -201,7 +196,7 @@ export async function runShadowWorker(sessionId: string): Promise<void> {
       signingSecret: config.signingSecret,
       category,
       sizeBucket,
-      isolationTier: tierResult.tier,
+      isolationTier: agent === "codex" ? "C" : tierResult.tier,
       withSkillRunOutcome: withSkill.runOutcome,
       withoutSkillRunOutcome: withoutSkill.runOutcome,
       securityDelta,
@@ -214,7 +209,8 @@ export async function runShadowWorker(sessionId: string): Promise<void> {
       // randomization (plan section 5's order-effect control does not
       // apply here, a real, disclosed limitation of this mode).
       orderRandomized: false,
-      claudeVersion,
+      claudeVersion: agent === "claude" ? claudeVersion : undefined,
+      execution: state.execution ? { ...state.execution, agent_version: claudeVersion } : undefined,
       cliVersion: getCliVersion(),
       cliBuildHash,
     });
@@ -231,8 +227,9 @@ export async function runShadowWorker(sessionId: string): Promise<void> {
   } catch (error) {
     log(`session ${sessionId}: FAILED — ${error instanceof Error ? error.stack ?? error.message : String(error)}`);
   } finally {
-    if (counterfactualDirCopy) rmSync(counterfactualDirCopy, { recursive: true, force: true });
-    rmSync(state.beforeSnapshotDir, { recursive: true, force: true });
+    if (counterfactualDirCopy) removeWorkDirCopy(counterfactualDirCopy);
+    if (state.foregroundSnapshotDir) removeWorkDirCopy(state.foregroundSnapshotDir);
+    removeWorkDirCopy(state.beforeSnapshotDir);
     isolatedHome?.cleanup();
     deleteShadowState(sessionId);
   }

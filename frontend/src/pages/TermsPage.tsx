@@ -15,7 +15,7 @@ export function TermsPage() {
 
       <h2>What this is</h2>
       <p>
-        Skilldiff ("the Service") shows measured, aggregated comparisons of Claude Code skills — each
+        Skilldiff ("the Service") shows measured, aggregated comparisons of Claude Code and Codex skills — each
         based on a task run once with a skill loaded and once without, on a contributor's own machine. The{" "}
         <code>skill-ab</code> CLI (source:{" "}
         <a href="https://github.com/RobinStelt/skilldiff">github.com/RobinStelt/skilldiff</a>, license: MIT) is what
@@ -25,7 +25,7 @@ export function TermsPage() {
       <h2>Your responsibility for what you run the CLI against</h2>
       <p>
         You are solely responsible for having the right to run the CLI, and any skill under test, against the code,
-        files, and tasks you point it at. The CLI does not upload your code or Claude's output as part of a normal
+        files, and tasks you point it at. The CLI does not upload your code or the agent's output as part of a normal
         run (see the <a href="/privacy">Privacy Policy</a>) — but you still need the underlying rights to process
         that content locally in the first place, including where it involves a third party's proprietary or
         confidential material. Don't run this against anything you're not authorized to process this way.

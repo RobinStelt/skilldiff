@@ -1,3 +1,4 @@
+import { agentSchema, type ExecutionFilter } from "@skilldiff/schema";
 import Fastify, { type FastifyInstance } from "fastify";
 import cors from "@fastify/cors";
 import rateLimit from "@fastify/rate-limit";
@@ -22,11 +23,11 @@ export interface AppDeps {
   getSkillMetrics: (skillId: string) => Promise<SkillCategoryMetrics[]>;
   getAllSkillMetrics: () => Promise<SkillCategoryMetrics[]>;
   /** Backs GET /api/skills — the frontend's public listing contract (frontend/src/api/types.ts). */
-  listSkills: (options: { category?: Category; cursor?: string | null }) => Promise<SkillListResponse>;
+  listSkills: (options: { category?: Category; cursor?: string | null } & ExecutionFilter) => Promise<SkillListResponse>;
   /** Backs GET /api/skills/:skillId — null means "no data for this skill", mapped to 404. */
-  getSkillDetail: (skillId: string) => Promise<SkillDetailResponse | null>;
+  getSkillDetail: (skillId: string, filter?: ExecutionFilter) => Promise<SkillDetailResponse | null>;
   /** Backs GET /api/skills/:skillId/export?category= — raw, non-plaintext records behind one aggregate (briefing point 6). */
-  getRawExportRecords: (skillId: string, category: Category) => Promise<RawExportRecord[]>;
+  getRawExportRecords: (skillId: string, category: Category, filter?: ExecutionFilter) => Promise<RawExportRecord[]>;
   now?: () => Date;
   /** Admin login + skill catalog CRUD (/api/admin/*, not part of any briefing — see db/migrations/003). */
   adminUserStore: AdminUserStore;
@@ -185,6 +186,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
     publicApi.get("/api/skills", async (request) => {
       const query = request.query as { category?: unknown; cursor?: unknown };
       return deps.listSkills({
+        ...parseExecutionFilter(request.query),
         category: parseCategory(query.category),
         cursor: typeof query.cursor === "string" ? query.cursor : null,
       });
@@ -192,7 +194,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
 
     publicApi.get("/api/skills/:skillId", async (request, reply) => {
       const { skillId } = request.params as { skillId: string };
-      const detail = await deps.getSkillDetail(skillId);
+      const detail = await deps.getSkillDetail(skillId, parseExecutionFilter(request.query));
       if (!detail) {
         return reply.code(404).send({ error: "unknown_skill" });
       }
@@ -202,6 +204,8 @@ export function buildApp(deps: AppDeps): FastifyInstance {
         metadata: detail.metadata,
         categories: detail.categories.map((c) => ({
           category: c.category,
+          execution: c.execution,
+          distinctContentHashCount: c.distinctContentHashCount,
           sampleSize: c.sampleSize,
           successDelta: c.successDelta,
           tokensDelta: c.tokensDelta,
@@ -210,7 +214,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
           isolationTierBreakdown: c.isolationTierBreakdown,
           distinctAccountCount: c.distinctAccountCount,
           seedDataMajority: c.seedDataMajority,
-          exportUrl: exportUrlFor(detail.skillId, c.category),
+          exportUrl: exportUrlFor(detail.skillId, c.category, c.execution),
         })),
       };
     });
@@ -222,7 +226,7 @@ export function buildApp(deps: AppDeps): FastifyInstance {
       if (!category) {
         return reply.code(400).send({ error: "category query parameter is required" });
       }
-      const records = await deps.getRawExportRecords(skillId, category);
+      const records = await deps.getRawExportRecords(skillId, category, parseExecutionFilter(request.query));
       return { skillId, category, records };
     });
   });
@@ -234,4 +238,21 @@ export function buildApp(deps: AppDeps): FastifyInstance {
   });
 
   return app;
+}
+
+function parseExecutionFilter(query: unknown): ExecutionFilter {
+  const values = query as Record<string, unknown>;
+  const filter: ExecutionFilter = {};
+  if (values.agent !== undefined) {
+    const parsed = agentSchema.safeParse(values.agent);
+    if (!parsed.success) throw Object.assign(new Error("agent must be claude or codex"), { statusCode: 400 });
+    filter.agent = parsed.data;
+  }
+  for (const key of ["model", "reasoning_effort"] as const) {
+    if (values[key] !== undefined) {
+      if (typeof values[key] !== "string" || values[key].length > 200 || (key === "model" && !values[key])) throw Object.assign(new Error(`Invalid ${key}`), { statusCode: 400 });
+      filter[key] = values[key];
+    }
+  }
+  return filter;
 }

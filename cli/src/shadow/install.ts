@@ -1,3 +1,4 @@
+import type { Agent } from "@skilldiff/schema";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 
@@ -24,8 +25,8 @@ interface ClaudeSettings {
   [key: string]: unknown;
 }
 
-function settingsPath(projectDir: string): string {
-  return join(projectDir, ".claude", "settings.json");
+function settingsPath(projectDir: string, agent: Agent = "claude"): string {
+  return agent === "codex" ? join(projectDir, ".codex", "hooks.json") : join(projectDir, ".claude", "settings.json");
 }
 
 function readSettings(path: string): ClaudeSettings {
@@ -70,20 +71,20 @@ function removeHook(settings: ClaudeSettings, event: string, command: string): v
  * are plain strings Claude Code invokes directly, not resolved relative to
  * this package.
  */
-export function installShadowHooks(projectDir: string): void {
-  const path = settingsPath(projectDir);
+export function installShadowHooks(projectDir: string, agent: Agent = "claude"): void {
+  const path = settingsPath(projectDir, agent);
   const settings = readSettings(path);
-  addHook(settings, "UserPromptSubmit", USER_PROMPT_SUBMIT_COMMAND);
-  addHook(settings, "Stop", STOP_COMMAND);
+  addHook(settings, "UserPromptSubmit", USER_PROMPT_SUBMIT_COMMAND + (agent === "codex" ? " --agent codex" : ""));
+  addHook(settings, "Stop", STOP_COMMAND + (agent === "codex" ? " --agent codex" : ""));
   writeSettings(path, settings);
 }
 
 /** Removes exactly the two entries `installShadowHooks` adds — everything else in settings.json is left untouched. */
-export function uninstallShadowHooks(projectDir: string): void {
-  const path = settingsPath(projectDir);
+export function uninstallShadowHooks(projectDir: string, agent: Agent = "claude"): void {
+  const path = settingsPath(projectDir, agent);
   if (!existsSync(path)) return;
   const settings = readSettings(path);
-  removeHook(settings, "UserPromptSubmit", USER_PROMPT_SUBMIT_COMMAND);
-  removeHook(settings, "Stop", STOP_COMMAND);
+  removeHook(settings, "UserPromptSubmit", USER_PROMPT_SUBMIT_COMMAND + (agent === "codex" ? " --agent codex" : ""));
+  removeHook(settings, "Stop", STOP_COMMAND + (agent === "codex" ? " --agent codex" : ""));
   writeSettings(path, settings);
 }

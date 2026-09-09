@@ -19,7 +19,7 @@ export function PrivacyPage() {
 
       <h2>What this service is</h2>
       <p>
-        Skilldiff measures whether a Claude Code skill helps with real tasks, by running a task once
+        Skilldiff measures whether a Claude Code or Codex skill helps with real tasks, by running a task once
         with the skill loaded and once without, automatically, and aggregating results across many contributors. This
         page covers data handled by the backend and website. The CLI runs entirely on your own machine except for
         what it explicitly uploads.
@@ -35,7 +35,7 @@ export function PrivacyPage() {
         </li>
         <li>
           <strong>Run metadata</strong> — skill ID, task category, isolation tier, token counts, duration,
-          success/failure, size bucket, timestamps, CLI/Claude version. This is the actual measurement.
+          success/failure, size bucket, timestamps, CLI/agent version, agent, model and reasoning setting. This is the actual measurement.
         </li>
         <li>
           <strong>Category-specific metrics</strong> — test coverage, lint errors, cyclomatic complexity, readability
@@ -51,7 +51,7 @@ export function PrivacyPage() {
         </li>
       </ul>
       <p>
-        <strong>We do not receive your code, your prompts, or Claude's responses</strong> as part of a normal upload.
+        <strong>We do not receive your code, your prompts, or the agent's responses</strong> as part of a normal upload.
         Every upload is validated against a strict schema before being accepted; content isn't part of that schema
         unless you separately opt in.
       </p>

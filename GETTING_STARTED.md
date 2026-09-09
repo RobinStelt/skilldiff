@@ -7,6 +7,15 @@
 > once, by hand. Until that happens, use the "Building from source"
 > fallback below step 1.
 
+## Use Codex / OpenAI models
+
+Install and authenticate Codex, then build this CLI from source as described below.
+Run `skill-ab run --agent codex --model <model-id> --reasoning-effort medium`
+with the same `--skill`, `--skill-source`, `--dir` and `--task` arguments.
+The source must be outside the task directory. Use a model available to your
+Codex account. Each comparison uses two real agent runs.
+See [Codex setup and shadow-mode limitations](cli/README.md#codex--openai-models).
+
 ## Prerequisites
 
 - **Node.js 20+**.

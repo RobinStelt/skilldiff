@@ -1,22 +1,18 @@
+import type { ExecutionFilter } from "@skilldiff/schema";
 import type { Category, SkillDetail, SkillListResponse } from "./types.js";
 
 export interface MarketplaceApiClient {
-  listSkills(params: { category?: Category; cursor?: string | null }): Promise<SkillListResponse>;
-  getSkill(skillId: string): Promise<SkillDetail>;
+  listSkills(params: { category?: Category; cursor?: string | null } & ExecutionFilter): Promise<SkillListResponse>;
+  getSkill(skillId: string, filter?: ExecutionFilter): Promise<SkillDetail>;
 }
 
-/**
- * Real HTTP client against the future backend endpoints. Paths follow the
- * contract documented in `../../README.md` — the backend doesn't serve
- * these yet (no `src/server.ts` in `backend/` at the time this was
- * written), so this client can't be exercised end-to-end until that lands.
- * Everything else in this app is built and tested against
- * `createMockApiClient` instead.
- */
+/** HTTP client for the public marketplace API. */
 export function createHttpApiClient(baseUrl: string): MarketplaceApiClient {
   return {
-    async listSkills({ category, cursor }) {
+    async listSkills({ category, cursor, agent, model }) {
       const url = new URL("/api/skills", baseUrl);
+      if (agent) url.searchParams.set("agent", agent);
+      if (model) url.searchParams.set("model", model);
       if (category) url.searchParams.set("category", category);
       if (cursor) url.searchParams.set("cursor", cursor);
       const response = await fetch(url);
@@ -24,8 +20,10 @@ export function createHttpApiClient(baseUrl: string): MarketplaceApiClient {
       return (await response.json()) as SkillListResponse;
     },
 
-    async getSkill(skillId) {
+    async getSkill(skillId, filter = {}) {
       const url = new URL(`/api/skills/${encodeURIComponent(skillId)}`, baseUrl);
+      if (filter.agent) url.searchParams.set("agent", filter.agent);
+      if (filter.model) url.searchParams.set("model", filter.model);
       const response = await fetch(url);
       if (!response.ok) throw new Error(`GET ${url} failed: HTTP ${response.status}`);
       return (await response.json()) as SkillDetail;

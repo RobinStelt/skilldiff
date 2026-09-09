@@ -1,4 +1,4 @@
-import { exec } from "node:child_process";
+import { exec, execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -6,11 +6,12 @@ import { dirname, join } from "node:path";
 import { createHash } from "node:crypto";
 
 const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export async function getClaudeVersion(claudeBin: string): Promise<string> {
   try {
-    const { stdout } = await execAsync(`"${claudeBin}" --version`);
+    const { stdout } = await execFileAsync(claudeBin, ["--version"], { windowsHide: true });
     return stdout.trim();
   } catch {
     return "unknown";

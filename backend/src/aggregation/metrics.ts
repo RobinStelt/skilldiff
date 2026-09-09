@@ -1,7 +1,9 @@
+import { executionKey, legacyExecution, type Execution } from "@skilldiff/schema";
 import type { Category, IsolationTier, RunOutcome, SecurityDelta, SeverityCounts } from "@skilldiff/schema";
 import { computeDeltaStats, type DeltaStats } from "./stats.js";
 
 export interface StoredRunResult {
+  execution?: Execution;
   runId: string;
   accountId: string;
   /** Briefing 06 point 4 — drives `seedDataMajority` below, kept separate from reputation/weight. */
@@ -24,6 +26,7 @@ export interface IsolationTierBreakdown {
 }
 
 export interface SkillCategoryMetrics {
+  execution?: Execution;
   skillId: string;
   category: Category;
   sampleSize: number;
@@ -88,6 +91,7 @@ export function aggregateSkillCategory(
   records: readonly StoredRunResult[],
   bootstrapOptions?: { iterations?: number; alpha?: number; rng?: () => number },
 ): SkillCategoryMetrics {
+  if (new Set(records.map((r) => executionKey(r.execution ?? legacyExecution))).size > 1) throw new Error("Cannot aggregate different agents, models or reasoning settings together");
   const successValues = records
     .filter((r) => r.withSkill.success !== null && r.withoutSkill.success !== null)
     .map((r) => ({
@@ -136,4 +140,17 @@ export function aggregateSkillCategory(
     seedDataMajority,
     distinctContentHashCount,
   };
+}
+
+/** Keep model cohorts separate even when no API filter is selected. */
+export function aggregateExecutionGroups(skillId: string, category: Category, records: readonly StoredRunResult[]): SkillCategoryMetrics[] {
+  const groups = new Map<string, StoredRunResult[]>();
+  for (const record of records) {
+    const key = executionKey(record.execution ?? legacyExecution);
+    groups.set(key, [...(groups.get(key) ?? []), record]);
+  }
+  return [...groups.values()].map((group) => ({
+    ...aggregateSkillCategory(skillId, category, group),
+    execution: { ...(group[0]!.execution ?? legacyExecution), agent_version: new Set(group.map((r) => r.execution?.agent_version ?? "unknown")).size === 1 ? group[0]!.execution?.agent_version ?? "unknown" : "multiple" },
+  }));
 }

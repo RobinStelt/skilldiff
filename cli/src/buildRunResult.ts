@@ -1,3 +1,4 @@
+import type { Execution } from "@skilldiff/schema";
 import { randomUUID } from "node:crypto";
 import type { Category, IsolationTier, RunOutcome, RunResult, SecurityDelta, SizeBucket } from "@skilldiff/schema";
 import { sign } from "./upload/signature.js";
@@ -19,7 +20,8 @@ export interface BuildRunResultParams {
   contentOptIn: boolean;
   contentRef: string | null;
   orderRandomized: boolean;
-  claudeVersion: string;
+  claudeVersion?: string;
+  execution?: Execution;
   cliVersion: string;
   cliBuildHash: string;
 }
@@ -44,7 +46,8 @@ function buildUnsignedPayload(p: BuildRunResultParams): Omit<RunResult, "signatu
     run_id: randomUUID(),
     order_randomized: p.orderRandomized,
     timestamp: new Date().toISOString(),
-    claude_version: p.claudeVersion,
+    ...(p.claudeVersion ? { claude_version: p.claudeVersion } : {}),
+    ...(p.execution ? { execution: p.execution } : {}),
     cli_version: p.cliVersion,
     cli_build_hash: p.cliBuildHash,
   };

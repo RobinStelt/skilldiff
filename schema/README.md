@@ -87,3 +87,13 @@ npm run build:json-schema  # writes run-result.schema.json
 cd schema
 npm install
 ```
+
+## Agent execution metadata
+
+New results carry `execution`: `{ agent: "claude" | "codex", model: string,
+agent_version: string, reasoning_effort: string | null }`. Both conditions must
+use the same execution settings. `claude_version` is optional for new payloads
+and must be absent on Codex results. Legacy results without `execution` still
+require `claude_version`; validation adds no defaults, preserving signatures.
+Unknown historical models remain unknown. `executionKey` groups by agent,
+model and reasoning effort. The agent version is retained for provenance.

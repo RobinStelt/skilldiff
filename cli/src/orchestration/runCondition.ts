@@ -1,3 +1,7 @@
+import type { Execution } from "@skilldiff/schema";
+import { verifyCodexModel } from "../agents/codexModel.js";
+import type { Agent } from "@skilldiff/schema";
+import { parseCodexUsage } from "../agents/adapter.js";
 import type { RunOutcome } from "@skilldiff/schema";
 import type { ProcessRunner } from "./processRunner.js";
 
@@ -49,6 +53,9 @@ export function parseClaudeUsage(stdout: string): { tokens: number; durationMs: 
 
 export interface RunConditionParams {
   runner: ProcessRunner;
+  agent?: Agent;
+  execution?: Execution;
+  onExecution?: (execution: Execution) => void;
   claudeBin: string;
   claudeArgs: string[];
   workDir: string;
@@ -72,7 +79,18 @@ export async function runCondition(params: RunConditionParams): Promise<RunOutco
   const start = Date.now();
   const claudeResult = await runner.run(claudeBin, claudeArgs, { cwd: workDir, env });
   const wallClockMs = Date.now() - start;
-  const { tokens, durationMs } = parseClaudeUsage(claudeResult.stdout);
+  if (claudeResult.exitCode !== 0) throw new Error(`Agent process failed (exit ${claudeResult.exitCode}); no comparison result will be uploaded.`);
+  if (params.agent !== "codex") {
+    const output = JSON.parse(claudeResult.stdout);
+    if (output.is_error) throw new Error("Claude did not complete the comparison task.");
+  }
+  const { tokens, durationMs } = params.agent === "codex" ? parseCodexUsage(claudeResult.stdout) : parseClaudeUsage(claudeResult.stdout);
+
+  if (params.agent === "codex" && params.execution) {
+    if (!env.CODEX_HOME) throw new Error("Codex model verification requires an isolated CODEX_HOME.");
+    const observed = verifyCodexModel(env.CODEX_HOME, claudeResult.stdout, params.execution);
+    params.onExecution?.(observed);
+  }
 
   let success: boolean | null = null;
   if (checkCommand) {

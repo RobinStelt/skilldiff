@@ -64,7 +64,11 @@ export const realProcessRunner: ProcessRunner = {
         cwd: opts.cwd,
         env: opts.env,
         shell: Boolean(opts.useShell) && platform() === "win32",
+        windowsHide: true,
       });
+      // Codex reads piped stdin even when a prompt argument is present.
+      // This runner has no stdin payload, so close it instead of waiting forever.
+      child.stdin?.end();
       let stdout = "";
       let stderr = "";
       child.stdout?.on("data", (chunk) => (stdout += chunk.toString()));

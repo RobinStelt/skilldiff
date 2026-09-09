@@ -1,9 +1,10 @@
+import type { Agent, Execution } from "@skilldiff/schema";
 import { mkdtempSync, cpSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve, dirname, basename } from "node:path";
 import type { IsolationTier, RunOutcome } from "@skilldiff/schema";
 import type { LinkCapability, Condition } from "../isolation/types.js";
-import { applyTierBGate, createIsolatedHome } from "../isolation/gating.js";
+import { applyTierBGate, createIsolatedHome, applyCopyGate, isolatedAgentEnv } from "../isolation/gating.js";
 import { runCondition } from "./runCondition.js";
 import type { ProcessRunner } from "./processRunner.js";
 import { randomizeOrder } from "./randomize.js";
@@ -15,13 +16,15 @@ export interface Invocation {
 
 export interface OrchestratorParams {
   runner: ProcessRunner;
+  agent?: Agent;
+  execution?: Execution;
   /**
    * Builds the actual invocation for ONE condition in ONE working
    * directory. For Tier B/C this is usually a direct `claude` call, for
    * Tier A a `docker run ...` wrapper (see `isolation/dockerRun.ts`) — the
    * orchestrator itself doesn't know the difference, it just invokes.
    */
-  buildInvocation: (condition: Condition, workDirCopy: string) => Invocation;
+  buildInvocation: (condition: Condition, workDirCopy: string, codexHome?: string) => Invocation;
   originalWorkDir: string;
   skillId: string;
   skillSourceDir: string | null;
@@ -33,6 +36,7 @@ export interface OrchestratorParams {
 
 export interface ConditionOutcome {
   condition: Condition;
+  execution?: Execution;
   runOutcome: RunOutcome;
   /** Fresh working copy this condition ran in — the basis for category/security analysis afterwards. */
   workDirCopy: string;
@@ -59,17 +63,25 @@ export function freshWorkDirCopy(originalWorkDir: string, label: string): string
   return copy;
 }
 
+/** Only delete directories created by this runner beneath the system temp root. */
+export function removeWorkDirCopy(path: string): void {
+  const absolute = resolve(path);
+  if (dirname(absolute).toLowerCase() !== resolve(tmpdir()).toLowerCase() || !basename(absolute).startsWith("skill-ab-")) return;
+  rmSync(absolute, { recursive: true, force: true });
+}
+
 async function runOneCondition(params: {
   o: OrchestratorParams;
   condition: Condition;
 }): Promise<ConditionOutcome> {
   const { o, condition } = params;
   const workDirCopy = freshWorkDirCopy(o.originalWorkDir, condition);
-  const isolatedHome = createIsolatedHome();
+  const isolatedHome = createIsolatedHome(undefined, o.agent);
 
   try {
     if (o.tier === "B" && o.skillSourceDir) {
       applyTierBGate({
+        agent: o.agent,
         workDir: workDirCopy,
         skillId: o.skillId,
         skillSourceDir: o.skillSourceDir,
@@ -78,15 +90,16 @@ async function runOneCondition(params: {
       });
     }
 
-    const env: NodeJS.ProcessEnv = {
-      ...process.env,
-      HOME: isolatedHome.path,
-      USERPROFILE: isolatedHome.path,
-    };
+    if (o.tier !== "B") applyCopyGate(workDirCopy, o.skillId, o.tier === "C" ? o.skillSourceDir : null, condition, o.agent ?? "claude");
+    const env = isolatedAgentEnv(isolatedHome.path, o.agent ?? "claude");
 
-    const invocation = o.buildInvocation(condition, workDirCopy);
+    const invocation = o.buildInvocation(condition, workDirCopy, env.CODEX_HOME);
+    let execution: Execution | undefined;
     const runOutcome = await runCondition({
+      execution: o.execution,
+      onExecution: (observed) => { execution = observed; },
       runner: o.runner,
+      agent: o.agent,
       claudeBin: invocation.bin,
       claudeArgs: invocation.args,
       workDir: workDirCopy,
@@ -94,7 +107,10 @@ async function runOneCondition(params: {
       checkCommand: o.checkCommand,
     });
 
-    return { condition, runOutcome, workDirCopy };
+    return { condition, runOutcome, workDirCopy, ...(execution ? { execution } : {}) };
+  } catch (error) {
+    removeWorkDirCopy(workDirCopy);
+    throw error;
   } finally {
     isolatedHome.cleanup();
     // workDirCopy is deliberately NOT deleted here — category detection
@@ -111,15 +127,21 @@ export async function runComparison(o: OrchestratorParams): Promise<Orchestrator
   const order = randomizeOrder(o.rng);
 
   const firstResult = await runOneCondition({ o, condition: order.first });
-  const secondResult = await runOneCondition({ o, condition: order.second });
+  let secondResult: ConditionOutcome;
+  try { secondResult = await runOneCondition({ o, condition: order.second }); }
+  catch (error) { removeWorkDirCopy(firstResult.workDirCopy); throw error; }
 
   const withSkill = firstResult.condition === "with_skill" ? firstResult : secondResult;
   const withoutSkill = firstResult.condition === "without_skill" ? firstResult : secondResult;
 
+  if (withSkill.execution && withoutSkill.execution && (withSkill.execution.model !== withoutSkill.execution.model || withSkill.execution.reasoning_effort !== withoutSkill.execution.reasoning_effort)) {
+    removeWorkDirCopy(withSkill.workDirCopy); removeWorkDirCopy(withoutSkill.workDirCopy);
+    throw new Error("A/B conditions used different models or reasoning efforts; no result will be uploaded.");
+  }
   return { orderRandomized: order.randomized, withSkill, withoutSkill };
 }
 
 export function cleanupWorkDirCopies(result: OrchestratorResult): void {
-  rmSync(result.withSkill.workDirCopy, { recursive: true, force: true });
-  rmSync(result.withoutSkill.workDirCopy, { recursive: true, force: true });
+  removeWorkDirCopy(result.withSkill.workDirCopy);
+  removeWorkDirCopy(result.withoutSkill.workDirCopy);
 }

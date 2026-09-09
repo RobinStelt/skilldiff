@@ -1,9 +1,11 @@
+import { agentSchema, type Agent } from "@skilldiff/schema";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { randomUUID, randomBytes } from "node:crypto";
 
 export interface WatchedSkill {
+  agent?: Agent;
   skillId: string;
   /** Must live outside any --dir used with `run` (Tier A/B requirement, same as --skill-source). */
   skillSourceDir: string;
@@ -63,6 +65,11 @@ export interface LocalConfig {
    * Windows — but a manual override for a setup it can't find.
    */
   claudeBinOverride: string | null;
+  agent?: Agent;
+  codexBinOverride?: string | null;
+  codexModel?: string | null;
+  claudeModel?: string | null;
+  codexReasoningEffort?: string | null;
 }
 
 /** Default storage location. Kept as a function (not a module constant) so tests can pass their own `configDir`. */
@@ -141,7 +148,7 @@ export function addWatchedSkill(
 ): LocalConfig {
   const updated: LocalConfig = {
     ...config,
-    watchedSkills: [...config.watchedSkills.filter((s) => s.skillId !== skill.skillId), skill],
+    watchedSkills: [...config.watchedSkills.filter((s) => s.skillId !== skill.skillId || (s.agent ?? "claude") !== (skill.agent ?? "claude")), skill],
   };
   saveConfig(updated, configDir);
   return updated;
@@ -151,16 +158,17 @@ export function removeWatchedSkill(
   config: LocalConfig,
   skillId: string,
   configDir: string = defaultConfigDir(),
+  agent: Agent = "claude",
 ): LocalConfig {
   const updated: LocalConfig = {
     ...config,
-    watchedSkills: config.watchedSkills.filter((s) => s.skillId !== skillId),
+    watchedSkills: config.watchedSkills.filter((s) => s.skillId !== skillId || (s.agent ?? "claude") !== agent),
   };
   saveConfig(updated, configDir);
   return updated;
 }
 
-export type ConfigurableKey = "endpoint" | "claude-bin";
+export type ConfigurableKey = "endpoint" | "claude-bin" | "codex-bin" | "agent" | "codex-model" | "claude-model" | "codex-reasoning-effort";
 
 /** Backs `skill-ab config set/unset` — the small, persisted set of defaults `run` and shadow mode fall back to. */
 export function setConfigValue(
@@ -169,14 +177,16 @@ export function setConfigValue(
   value: string | null,
   configDir: string = defaultConfigDir(),
 ): LocalConfig {
-  const updated: LocalConfig =
-    key === "endpoint" ? { ...config, endpointUrl: value } : { ...config, claudeBinOverride: value };
+  if (key === "agent" && value !== null) agentSchema.parse(value);
+  const fields = { endpoint: "endpointUrl", "claude-bin": "claudeBinOverride", "codex-bin": "codexBinOverride", agent: "agent", "codex-model": "codexModel", "claude-model": "claudeModel", "codex-reasoning-effort": "codexReasoningEffort" } as const;
+  const updated: LocalConfig = { ...config, [fields[key]]: value };
   saveConfig(updated, configDir);
   return updated;
 }
 
 /** `rng` is injectable so tests get a deterministic pick instead of a real random one. */
-export function pickRandomWatchedSkill(config: LocalConfig, rng: () => number = Math.random): WatchedSkill | null {
+export function pickRandomWatchedSkill(config: LocalConfig, rng: () => number = Math.random, agent: Agent = "claude"): WatchedSkill | null {
+  config = { ...config, watchedSkills: config.watchedSkills.filter((skill) => (skill.agent ?? "claude") === agent) };
   if (config.watchedSkills.length === 0) return null;
   const index = Math.min(config.watchedSkills.length - 1, Math.floor(rng() * config.watchedSkills.length));
   return config.watchedSkills[index] ?? null;

@@ -78,3 +78,14 @@ describe("buildRunResult", () => {
     expect(a.signature).not.toBe(b.signature);
   });
 });
+
+
+it("signs Codex execution metadata without inventing a Claude version", () => {
+  const execution = { agent: "codex" as const, model: "test-model", agent_version: "1", reasoning_effort: "medium" };
+  const result = buildRunResult(buildBaseParams({ claudeVersion: undefined, execution }));
+  expect(result.claude_version).toBeUndefined();
+  expect(result.execution).toEqual(execution);
+  expect(Array.isArray(validateRunResult(result))).toBe(false);
+  expect(Array.isArray(validateRunResult({ ...result, claude_version: "wrong" }))).toBe(true);
+  expect(Array.isArray(validateRunResult({ ...result, execution: undefined }))).toBe(true);
+});

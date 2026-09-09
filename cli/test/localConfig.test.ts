@@ -113,3 +113,17 @@ describe("watched skills", () => {
     expect(pickRandomWatchedSkill(config, () => 0.999)?.skillId).toBe("c");
   });
 });
+
+
+it("keeps watch lists separate for Claude and Codex", () => {
+  const path = mkdtempSync(join(tmpdir(), "skilldiff-watch-agents-"));
+  try {
+    let config = loadOrCreateConfig(path);
+    config = addWatchedSkill(config, { skillId: "same-id", skillSourceDir: "/claude", lastKnownHash: null }, path);
+    config = addWatchedSkill(config, { agent: "codex", skillId: "same-id", skillSourceDir: "/codex", lastKnownHash: null }, path);
+    expect(pickRandomWatchedSkill(config, () => 0)?.skillSourceDir).toBe("/claude");
+    expect(pickRandomWatchedSkill(config, () => 0, "codex")?.skillSourceDir).toBe("/codex");
+    config = removeWatchedSkill(config, "same-id", path, "codex");
+    expect(config.watchedSkills).toHaveLength(1);
+  } finally { rmSync(path, { recursive: true, force: true }); }
+});

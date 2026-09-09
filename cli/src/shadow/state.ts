@@ -1,3 +1,4 @@
+import type { Execution } from "@skilldiff/schema";
 import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { defaultConfigDir } from "../config/localConfig.js";
@@ -5,6 +6,10 @@ import type { Condition } from "../isolation/types.js";
 
 export interface ShadowState {
   sessionId: string;
+  execution?: Execution;
+  foregroundSnapshotDir?: string;
+  foregroundTokenBaseline?: number;
+  turnId?: string;
   task: string;
   /** The real project directory the user is actually working in. */
   cwd: string;
@@ -29,6 +34,7 @@ function shadowStateDir(configDir: string = defaultConfigDir()): string {
 }
 
 function shadowStatePath(sessionId: string, configDir: string = defaultConfigDir()): string {
+  if (!/^[a-zA-Z0-9_-]+$/.test(sessionId)) throw new Error("Invalid shadow state ID");
   return join(shadowStateDir(configDir), `${sessionId}.json`);
 }
 

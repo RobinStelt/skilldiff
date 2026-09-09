@@ -918,6 +918,30 @@ input:focus-visible {
   min-height: 150px;
   color: #b8cba0;
 }
+.catalog-pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.catalog-pagination p {
+  flex-basis: 100%;
+  text-align: center;
+}
+
+.catalog-pagination__status {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.catalog-pagination button:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
 .catalog-footnote {
   display: flex;
   align-items: baseline;
@@ -1546,3 +1570,7 @@ input:focus-visible {
     transition: none !important;
   }
 }
+
+.execution-filter { display: flex; flex-wrap: wrap; align-items: end; gap: 16px; margin: 24px 0; }
+.execution-filter label { display: grid; gap: 8px; color: var(--text-muted); }
+.execution-filter select, .execution-filter input { max-width: 100%; padding: 10px; color: var(--text); background: var(--surface); border: 1px solid var(--border); border-radius: 4px; font: inherit; }

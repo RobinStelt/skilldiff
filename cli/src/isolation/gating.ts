@@ -1,4 +1,5 @@
-import { mkdtempSync, rmSync, mkdirSync, symlinkSync, existsSync, lstatSync, copyFileSync } from "node:fs";
+import type { Agent } from "@skilldiff/schema";
+import { mkdtempSync, rmSync, mkdirSync, symlinkSync, existsSync, lstatSync, copyFileSync, cpSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { tmpdir, homedir } from "node:os";
 import { join } from "node:path";
@@ -46,17 +47,23 @@ function copyCredentialsIfPresent(realHomeDir: string, isolatedHomePath: string)
  * `realHomeDir` is a parameter (not a hardcoded `homedir()` call) purely so
  * tests can point it at a fixture directory instead of the real user home.
  */
-export function createIsolatedHome(realHomeDir: string = homedir()): IsolatedHome {
+export function createIsolatedHome(realHomeDir: string = homedir(), agent: Agent = "claude"): IsolatedHome {
   const path = mkdtempSync(join(tmpdir(), "skill-ab-home-"));
-  copyCredentialsIfPresent(realHomeDir, path);
+  if (agent === "claude") copyCredentialsIfPresent(realHomeDir, path);
+  else {
+    const source = join(process.env.CODEX_HOME ?? join(realHomeDir, ".codex"), "auth.json");
+    mkdirSync(join(path, ".codex"), { recursive: true });
+    if (existsSync(source)) copyFileSync(source, join(path, ".codex", "auth.json"));
+  }
   return {
     path,
     cleanup: () => rmSync(path, { recursive: true, force: true }),
   };
 }
 
-function skillLinkPath(workDir: string, skillId: string): string {
-  return join(workDir, ".claude", "skills", skillId);
+export function skillLinkPath(workDir: string, skillId: string, agent: Agent = "claude"): string {
+  if (!/^[a-zA-Z0-9_.-]+$/.test(skillId) || skillId === "." || skillId === "..") throw new Error("Skill ID must be a single safe directory name.");
+  return join(workDir, agent === "codex" ? ".agents" : ".claude", "skills", skillId);
 }
 
 /**
@@ -65,8 +72,8 @@ function skillLinkPath(workDir: string, skillId: string): string {
  * condition a real foreground turn actually represents — does NOT verify
  * the link points at any particular source, just that something is there.
  */
-export function isSkillLinked(workDir: string, skillId: string): boolean {
-  return existsSync(skillLinkPath(workDir, skillId));
+export function isSkillLinked(workDir: string, skillId: string, agent: Agent = "claude"): boolean {
+  return existsSync(skillLinkPath(workDir, skillId, agent));
 }
 
 function removeLinkIfPresent(linkPath: string): void {
@@ -75,7 +82,7 @@ function removeLinkIfPresent(linkPath: string): void {
   if (stat.isSymbolicLink() || stat.isDirectory()) {
     // rmSync on a symlink/junction only removes the reference itself, not
     // recursively the target's content — which is exactly what we want.
-    rmSync(linkPath, { recursive: false, force: true });
+    rmSync(linkPath, { recursive: !stat.isSymbolicLink(), force: true });
   }
 }
 
@@ -107,13 +114,21 @@ export function applyTierBGate(params: {
   skillSourceDir: string;
   condition: Condition;
   linkCapability: LinkCapability;
+  agent?: Agent;
 }): void {
   const { workDir, skillId, skillSourceDir, condition, linkCapability } = params;
-  const linkPath = skillLinkPath(workDir, skillId);
-  mkdirSync(join(workDir, ".claude", "skills"), { recursive: true });
+  const linkPath = skillLinkPath(workDir, skillId, params.agent);
+  mkdirSync(join(workDir, params.agent === "codex" ? ".agents" : ".claude", "skills"), { recursive: true });
   removeLinkIfPresent(linkPath);
 
   if (condition === "without_skill") {
+    return;
+  }
+
+  if (params.agent === "codex") {
+    // A distinct path avoids the personal-skill exclusion also disabling a
+    // treatment skill whose source is installed in the real OS home.
+    cpSync(skillSourceDir, linkPath, { recursive: true });
     return;
   }
 
@@ -146,4 +161,24 @@ export function assertSkillSourceOutsideWorkDir(workDir: string, skillSourceDir:
 
 export function tierRequiresOutsideSourceCheck(tier: IsolationTier): boolean {
   return tier === "A" || tier === "B";
+}
+
+/** Apply the gate to a disposable work copy even when links are unavailable. */
+export function applyCopyGate(workDir: string, skillId: string, source: string | null, condition: Condition, agent: Agent): void {
+  const path = skillLinkPath(workDir, skillId, agent);
+  removeLinkIfPresent(path);
+  if (condition === "with_skill" && source) cpSync(source, path, { recursive: true });
+}
+
+export function isolatedAgentEnv(path: string, agent: Agent): NodeJS.ProcessEnv {
+  const env = { ...process.env, HOME: path, USERPROFILE: path, SKILL_AB_INTERNAL_RUN: "1" };
+  if (agent === "codex") {
+    // A CLI launched from Codex must not inherit the desktop task's permissions,
+    // session identity, or tool pipe. Only the explicit API credential is shared.
+    for (const key of Object.keys(env)) {
+      if (key.startsWith("CODEX_") && key !== "CODEX_API_KEY") delete (env as NodeJS.ProcessEnv)[key];
+    }
+    return { ...env, CODEX_HOME: join(path, ".codex"), XDG_CONFIG_HOME: join(path, ".config") };
+  }
+  return env;
 }

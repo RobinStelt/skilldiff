@@ -1,3 +1,5 @@
+import { useId } from "react";
+import { executionLabel } from "./ExecutionFilter.js";
 import type { SkillCategoryDetail } from "../api/types.js";
 import { DeltaMetric } from "./DeltaMetric.js";
 import { IsolationTierBar } from "./IsolationTierBar.js";
@@ -33,13 +35,15 @@ function formatSeverityScore(value: number): string {
  * point 1 / acceptance criterion 1).
  */
 export function CategorySection({ detail }: { detail: SkillCategoryDetail }) {
+  const headingId = useId();
   return (
-    <section className="category-section" aria-labelledby={`category-${detail.category}-heading`}>
+    <section className="category-section" aria-labelledby={headingId}>
       <header className="category-section__header">
-        <h3 id={`category-${detail.category}-heading`}>{CATEGORY_LABEL[detail.category] ?? detail.category}</h3>
+        <h3 id={headingId}>{CATEGORY_LABEL[detail.category] ?? detail.category}</h3>
         {detail.seedDataMajority && <SeedDataBadge />}
       </header>
 
+      <p>{executionLabel(detail.execution)}</p>
       <div className="category-section__metrics">
         <DeltaMetric
           label="Success rate"

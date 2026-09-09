@@ -25,9 +25,13 @@ program
 program
   .command("run")
   .description("Start a comparison run for a skill")
+  .option("--agent <agent>", "Agent: claude or codex")
+  .option("--model <model>", "Model used for both conditions (Codex inherits the current session or configuration)")
+  .option("--reasoning-effort <effort>", "Reasoning effort used for both conditions")
+  .option("--codex-bin <path>", "Path to the native Codex executable")
   .option("--skill <id>", "ID of the skill to test — omit together with --skill-source to pick one at random from your watch list (see \"watch add\")")
   .requiredOption("--dir <path>", "Working directory of the task")
-  .requiredOption("--task <text>", "Task description passed to Claude Code")
+  .requiredOption("--task <text>", "Task description passed to the selected agent")
   .option(
     "--skill-source <path>",
     "Directory of the skill source — MUST live physically outside --dir (Tier A/B)",
@@ -45,7 +49,7 @@ program
     "--endpoint <url>",
     "Backend endpoint for the upload. Omit to use \"skill-ab config set endpoint\" (if set), or run against a local mock",
   )
-  .option("--docker-image <image>", "Image for Tier A runs (must contain the claude CLI)")
+  .option("--docker-image <image>", "Image for Tier A runs (must contain the selected agent CLI)")
   .option(
     "--no-docker",
     "Skip Tier A even if Docker/Podman is running, falling back to Tier B/C — for a machine that runs Docker for unrelated reasons but has no skill-ab/claude-runner image or uses subscription (not API-key) auth",
@@ -59,6 +63,7 @@ program
         skillSourceDir: opts.skillSource,
         checkCommand: opts.check,
         claudeBin: opts.claudeBin,
+        codexBin: opts.codexBin, agent: opts.agent, model: opts.model, reasoningEffort: opts.reasoningEffort,
         endpointUrl: opts.endpoint,
         dockerImage: opts.dockerImage,
         noDocker: opts.docker === false,
@@ -73,12 +78,13 @@ const watch = program.command("watch").description("Manage the skills `run` pick
 
 watch
   .command("add")
+  .option("--agent <agent>", "Agent whose watch list to use")
   .description("Watch a skill so `run` can pick it without --skill/--skill-source every time")
   .requiredOption("--skill <id>", "ID of the skill")
   .requiredOption("--source <path>", "Directory of the skill source")
   .action((opts) => {
     try {
-      watchAddCommand({ skillId: opts.skill, skillSourceDir: opts.source });
+      watchAddCommand({ skillId: opts.skill, skillSourceDir: opts.source, agent: opts.agent });
     } catch (err) {
       console.error(pc.red("Error:"), err instanceof Error ? err.message : err);
       process.exitCode = 1;
@@ -87,11 +93,12 @@ watch
 
 watch
   .command("remove")
+  .option("--agent <agent>", "Agent whose watch list to use")
   .description("Stop watching a skill")
   .requiredOption("--skill <id>", "ID of the skill")
   .action((opts) => {
     try {
-      watchRemoveCommand({ skillId: opts.skill });
+      watchRemoveCommand({ skillId: opts.skill, agent: opts.agent });
     } catch (err) {
       console.error(pc.red("Error:"), err instanceof Error ? err.message : err);
       process.exitCode = 1;
@@ -100,10 +107,11 @@ watch
 
 watch
   .command("list")
+  .option("--agent <agent>", "Agent whose watch list to use")
   .description("List watched skills")
-  .action(() => {
+  .action((opts) => {
     try {
-      watchListCommand();
+      watchListCommand(opts.agent);
     } catch (err) {
       console.error(pc.red("Error:"), err instanceof Error ? err.message : err);
       process.exitCode = 1;
@@ -112,6 +120,7 @@ watch
 
 watch
   .command("sync")
+  .option("--agent <agent>", "Agent whose installed skills to scan")
   .description(
     "Watch every skill that is both installed locally (.claude/skills/) and already in your marketplace catalog " +
       "— drops watched skills you've uninstalled, and warns (without silently mixing data) when a watched skill's content changed",
@@ -123,7 +132,7 @@ watch
   )
   .action(async (opts) => {
     try {
-      await watchSyncCommand({ dir: opts.dir, endpointUrl: opts.endpoint });
+      await watchSyncCommand({ dir: opts.dir, endpointUrl: opts.endpoint, agent: opts.agent });
     } catch (err) {
       console.error(pc.red("Error:"), err instanceof Error ? err.message : err);
       process.exitCode = 1;
@@ -173,10 +182,11 @@ const shadow = program
 shadow
   .command("install")
   .description("Register the shadow-mode hooks in a project's .claude/settings.json (idempotent, additive)")
+  .option("--agent <agent>", "Agent: claude or codex", "claude")
   .requiredOption("--dir <path>", "Project directory")
   .action((opts) => {
     try {
-      shadowInstallCommand({ dir: opts.dir });
+      shadowInstallCommand({ dir: opts.dir, agent: opts.agent });
     } catch (err) {
       console.error(pc.red("Error:"), err instanceof Error ? err.message : err);
       process.exitCode = 1;
@@ -186,10 +196,11 @@ shadow
 shadow
   .command("uninstall")
   .description("Remove the shadow-mode hooks from a project's .claude/settings.json")
+  .option("--agent <agent>", "Agent: claude or codex", "claude")
   .requiredOption("--dir <path>", "Project directory")
   .action((opts) => {
     try {
-      shadowUninstallCommand({ dir: opts.dir });
+      shadowUninstallCommand({ dir: opts.dir, agent: opts.agent });
     } catch (err) {
       console.error(pc.red("Error:"), err instanceof Error ? err.message : err);
       process.exitCode = 1;
@@ -200,10 +211,11 @@ shadow
 // shadowStopCommand's own detached spawn — not meant to be run by hand.
 shadow
   .command("user-prompt-submit")
+  .option("--agent <agent>", "Agent", "claude")
   .description("[internal, invoked by the UserPromptSubmit hook]")
-  .action(() => {
+  .action((opts) => {
     try {
-      shadowUserPromptSubmitCommand();
+      shadowUserPromptSubmitCommand(opts.agent);
     } catch {
       // Hook commands must never make Claude Code's own turn fail because
       // of a shadow-mode bug — fail silently, exit 0.
@@ -212,10 +224,11 @@ shadow
 
 shadow
   .command("stop")
+  .option("--agent <agent>", "Agent", "claude")
   .description("[internal, invoked by the Stop hook]")
-  .action(() => {
+  .action((opts) => {
     try {
-      shadowStopCommand();
+      shadowStopCommand(opts.agent);
     } catch {
       // Same reasoning as user-prompt-submit above.
     }

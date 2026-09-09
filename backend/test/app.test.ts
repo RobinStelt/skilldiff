@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { buildApp, type AppDeps } from "../src/app.js";
 import { createInMemoryAccountStore } from "../src/accounts/accountStore.js";
 import { createFakeContentRepo, createFakeRunResultRepo } from "./helpers/fakeRepos.js";
@@ -40,6 +40,22 @@ function makeApp(overrides: Partial<AppDeps> = {}) {
   });
   return { app, accountStore, runResultRepo, contentRepo };
 }
+
+it("validates and forwards execution filters on public routes", async () => {
+  const listSkills = vi.fn<AppDeps["listSkills"]>().mockResolvedValue({ skills: [], nextCursor: null });
+  const getRawExportRecords = vi.fn<AppDeps["getRawExportRecords"]>().mockResolvedValue([]);
+  const getSkillDetail = vi.fn<AppDeps["getSkillDetail"]>().mockResolvedValue(null);
+  const { app } = makeApp({ listSkills, getRawExportRecords, getSkillDetail });
+  try {
+    expect((await app.inject("/api/skills?agent=codex&model=test-model&cursor=page-2")).statusCode).toBe(200);
+    expect(listSkills).toHaveBeenCalledWith({ agent: "codex", model: "test-model", category: undefined, cursor: "page-2" });
+    await app.inject("/api/skills/demo?agent=codex&model=test-model");
+    expect(getSkillDetail).toHaveBeenCalledWith("demo", { agent: "codex", model: "test-model" });
+    await app.inject("/api/skills/demo/export?category=feature&agent=codex&model=test-model&reasoning_effort=medium");
+    expect(getRawExportRecords).toHaveBeenCalledWith("demo", "feature", { agent: "codex", model: "test-model", reasoning_effort: "medium" });
+    expect((await app.inject("/api/skills?agent=invalid")).statusCode).toBe(400);
+  } finally { await app.close(); }
+});
 
 describe("GET /health", () => {
   it("answers ok with no dependency on the database", async () => {

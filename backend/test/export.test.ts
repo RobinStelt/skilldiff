@@ -20,10 +20,10 @@ describe("toCsv", () => {
       },
     ];
     const csv = toCsv(metrics);
-    expect(csv).toContain("skill_x,debugging,12");
+    expect(csv).toContain("skill_x,debugging,claude,unknown,,12");
     expect(csv).toContain("500");
     expect(csv.split("\n")[0]).toBe(
-      "skill_id,category,sample_size,success_delta_median,success_delta_ci_low,success_delta_ci_high,tokens_delta_median,tokens_delta_ci_low,tokens_delta_ci_high,duration_delta_median,duration_delta_ci_low,duration_delta_ci_high,security_delta_median,security_delta_ci_low,security_delta_ci_high,security_delta_sample_size",
+      "skill_id,category,agent,model,reasoning_effort,sample_size,success_delta_median,success_delta_ci_low,success_delta_ci_high,tokens_delta_median,tokens_delta_ci_low,tokens_delta_ci_high,duration_delta_median,duration_delta_ci_low,duration_delta_ci_high,security_delta_median,security_delta_ci_low,security_delta_ci_high,security_delta_sample_size",
     );
     // No field named after a raw identifier anywhere in the output.
     expect(csv).not.toMatch(/run_id|account_id|content_ref/);

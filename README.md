@@ -1,6 +1,6 @@
 # SkillDiff
 
-Shows whether a Claude skill actually helps — measured from real usage
+Shows whether an agent skill actually helps — measured from real usage
 (a task run once with the skill loaded, once without), not stars or a
 security scan. Full rationale: [`skill-ab-marktplatz-plan.md`](skill-ab-marktplatz-plan.md)
 (German — the project's own planning language, see [`CLAUDE.md`](CLAUDE.md)).
@@ -58,6 +58,14 @@ APP_DATABASE_URL=postgres://app_backend:change-me-app-backend@localhost:5432/ski
 For active backend/frontend development (fast rebuilds, no image
 rebuilding per change), use each package's own `npm run dev` instead —
 `backend/README.md` and `frontend/README.md`.
+
+## Claude Code and Codex comparisons
+
+The CLI supports both Claude Code and Codex. Codex runs use an explicit model
+and the same reasoning effort for both conditions. The marketplace separates
+results by agent, model and reasoning effort; legacy Claude results remain in
+an unknown-model cohort. See [the CLI guide](cli/README.md#codex--openai-models).
+Apply migration `005_execution.sql` before starting the updated backend.
 
 ## License
 

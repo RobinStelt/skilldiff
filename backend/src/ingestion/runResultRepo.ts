@@ -1,3 +1,4 @@
+import { legacyExecution } from "@skilldiff/schema";
 import type { Pool } from "pg";
 import type { RunResult } from "@skilldiff/schema";
 
@@ -20,12 +21,12 @@ export function createPgRunResultRepo(appPool: Pool): RunResultRepo {
            run_id, account_id, skill_id, skill_content_hash, category, size_bucket, isolation_tier,
            order_randomized, run_timestamp, claude_version, cli_version, cli_build_hash,
            content_opt_in, has_content_ref, with_skill, without_skill, security_delta,
-           category_metrics, weight, anomaly_flags
+           category_metrics, weight, anomaly_flags, execution
          ) VALUES (
            $1, $2, $3, $4, $5, $6, $7,
            $8, $9, $10, $11, $12,
            $13, $14, $15, $16, $17,
-           $18, $19, $20
+           $18, $19, $20, $21
          )`,
         [
           runResult.run_id,
@@ -37,7 +38,7 @@ export function createPgRunResultRepo(appPool: Pool): RunResultRepo {
           runResult.isolation_tier,
           runResult.order_randomized,
           runResult.timestamp,
-          runResult.claude_version,
+          runResult.claude_version ?? null,
           runResult.cli_version,
           runResult.cli_build_hash,
           runResult.content_opt_in,
@@ -48,6 +49,7 @@ export function createPgRunResultRepo(appPool: Pool): RunResultRepo {
           runResult.category_metrics !== null ? JSON.stringify(runResult.category_metrics) : null,
           weight,
           anomalyFlags,
+          JSON.stringify(runResult.execution ?? { ...legacyExecution, agent_version: runResult.claude_version ?? "unknown" }),
         ],
       );
     },

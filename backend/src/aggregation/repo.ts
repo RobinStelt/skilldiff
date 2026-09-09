@@ -24,13 +24,14 @@ export async function fetchStoredRunResults(
   const { rows } = await appPool.query(
     `SELECT r.run_id, r.skill_id, r.skill_content_hash, r.category, r.isolation_tier, r.weight,
             r.with_skill, r.without_skill, r.security_delta,
-            r.account_id, a.is_seed_account
+            r.account_id, a.is_seed_account, r.execution
      FROM run_results r
      JOIN accounts a ON a.account_id = r.account_id
      WHERE r.skill_id = $1 AND r.category = $2`,
     [skillId, category],
   );
   return rows.map((row) => ({
+    execution: row.execution,
     runId: row.run_id,
     accountId: row.account_id,
     isSeedAccount: row.is_seed_account,

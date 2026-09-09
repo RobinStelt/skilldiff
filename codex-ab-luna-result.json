@@ -1,0 +1,38 @@
+{
+  "timestamp": "2026-09-08T20:55:00.108Z",
+  "purpose": "Skill discovery integration A/B test; not a skill efficacy benchmark",
+  "order_randomized": true,
+  "with_skill": {
+    "execution": {
+      "agent": "codex",
+      "model": "gpt-5.6-luna",
+      "reasoning_effort": "low",
+      "agent_version": "codex-cli 0.153.4"
+    },
+    "success": null,
+    "tokens": 83335,
+    "duration_sec": 39,
+    "marker": "SKILL",
+    "marker_check": true
+  },
+  "without_skill": {
+    "execution": {
+      "agent": "codex",
+      "model": "gpt-5.6-luna",
+      "reasoning_effort": "low",
+      "agent_version": "codex-cli 0.153.4"
+    },
+    "success": null,
+    "tokens": 68698,
+    "duration_sec": 40,
+    "marker": "RESULT",
+    "marker_check": true
+  },
+  "isolation_tier": "C",
+  "uploaded": false,
+  "checks": {
+    "with_skill_marker": "passed",
+    "without_skill_marker": "passed",
+    "model_and_effort_verified_per_session": true
+  }
+}

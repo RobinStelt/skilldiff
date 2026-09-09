@@ -29,6 +29,11 @@ navigation and the dark theme also cover the existing detail and legal routes.
 If the backend is unavailable, the catalog shows a retry action while the
 landing content remains available; no fixture data is substituted.
 
+The catalog provides Previous/Next navigation and a current page indicator,
+using the API's cursors. Each page replaces the displayed cards. Failed page
+requests retain the current page and offer a retry. Changing the category
+returns to page 1 and ignores pending responses from the previous selection.
+
 The visual identity uses graphite, acid yellow-green, a custom split-path mark,
 and locally served Space Grotesk (license in `public/fonts/`). The two original
 background/editorial images in `public/images/` are optimized WebP assets;
@@ -91,3 +96,12 @@ metric for non-code categories.
 - No login/auth for skill authors — read-only view.
 - No changes to the aggregation logic itself — only consumption of its
   (not-yet-existing) API.
+
+## Agent and model filters
+
+Overview and detail pages provide Claude Code / Codex agent selection and
+an exact model-ID filter. Filter changes restart pagination. Each category's
+sample size and metrics belong to a separate agent/model/reasoning cohort;
+small cohorts are never combined to cross the minimum sample threshold.
+Export links reproduce the selected cohort, and old data is labeled with an
+unknown model. The backend must have migration 005 applied.

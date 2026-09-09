@@ -1,7 +1,7 @@
 import pc from "picocolors";
 import { loadOrCreateConfig, setConfigValue, type ConfigurableKey } from "../config/localConfig.js";
 
-const VALID_KEYS: readonly ConfigurableKey[] = ["endpoint", "claude-bin"];
+const VALID_KEYS: readonly ConfigurableKey[] = ["endpoint", "claude-bin", "codex-bin", "agent", "codex-model", "claude-model", "codex-reasoning-effort"];
 
 function assertValidKey(key: string): asserts key is ConfigurableKey {
   if (!(VALID_KEYS as readonly string[]).includes(key)) {
@@ -26,5 +26,6 @@ export function configUnsetCommand(key: string): void {
 export function configShowCommand(): void {
   const config = loadOrCreateConfig();
   console.log(`endpoint\t${config.endpointUrl ?? pc.dim("(not set)")}`);
+  for (const [key, value] of Object.entries({ agent: config.agent ?? "claude", "codex-bin": config.codexBinOverride, "codex-model": config.codexModel, "claude-model": config.claudeModel, "codex-reasoning-effort": config.codexReasoningEffort })) console.log(`${key}\t${value ?? "(not set)"}`);
   console.log(`claude-bin\t${config.claudeBinOverride ?? pc.dim("(not set — auto-detected)")}`);
 }

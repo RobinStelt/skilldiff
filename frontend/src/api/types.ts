@@ -1,16 +1,7 @@
+import type { Execution } from "@skilldiff/schema";
 import type { Category, IsolationTier } from "@skilldiff/schema";
 
-/**
- * API contract this frontend is built against. The backend (Phase 3) does
- * not expose an HTTP layer yet — only the internal aggregation modules
- * (`backend/src/aggregation/*`) exist. This type mirrors
- * `backend/src/aggregation/metrics.ts` (`DeltaStats`, `SkillCategoryMetrics`)
- * field-for-field where that overlaps, and adds the fields this phase's
- * briefing requires that aggregation doesn't compute yet — see
- * `../../README.md`, section "Backend gap", for exactly what's missing and
- * why each field is needed.
- */
-
+/** Public marketplace API contract; legacy fixtures may omit execution metadata. */
 export interface ConfidenceInterval {
   low: number;
   high: number;
@@ -29,6 +20,7 @@ export interface IsolationTierBreakdown {
 }
 
 export interface SkillCategoryDetail {
+  execution?: Execution;
   category: Category;
   sampleSize: number;
   successDelta: DeltaStats;
@@ -80,6 +72,7 @@ export interface SkillDetail {
 }
 
 export interface SkillSummaryCategory {
+  execution?: Execution;
   category: Category;
   sampleSize: number;
 }

@@ -1,6 +1,6 @@
 import type { Pool } from "pg";
 import { fetchStoredRunResults, listSkillCategoryPairs } from "../aggregation/repo.js";
-import { aggregateSkillCategory, type SkillCategoryMetrics } from "../aggregation/metrics.js";
+import { aggregateExecutionGroups, type SkillCategoryMetrics } from "../aggregation/metrics.js";
 
 /**
  * "Aggregations-Query für einen Skill liefert Ergebnisse pro Kategorie
@@ -14,7 +14,7 @@ export async function getSkillMetrics(appPool: Pool, skillId: string): Promise<S
   const results: SkillCategoryMetrics[] = [];
   for (const pair of pairs) {
     const records = await fetchStoredRunResults(appPool, pair.skillId, pair.category);
-    results.push(aggregateSkillCategory(pair.skillId, pair.category, records));
+    results.push(...aggregateExecutionGroups(pair.skillId, pair.category, records));
   }
   return results;
 }

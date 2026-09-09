@@ -1,3 +1,5 @@
+import type { ExecutionFilter as Filter } from "@skilldiff/schema";
+import { ExecutionFilter } from "../components/ExecutionFilter.js";
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import type { MarketplaceApiClient } from "../api/client.js";
@@ -6,6 +8,7 @@ import { CategorySection } from "../components/CategorySection.js";
 import { SkillMetadataCard } from "../components/SkillMetadataCard.js";
 
 export function SkillDetailPage({ apiClient }: { apiClient: MarketplaceApiClient }) {
+  const [executionFilter, setExecutionFilter] = useState<Filter>({});
   const { skillId } = useParams<{ skillId: string }>();
   const [detail, setDetail] = useState<SkillDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -16,7 +19,7 @@ export function SkillDetailPage({ apiClient }: { apiClient: MarketplaceApiClient
     setDetail(null);
     setError(null);
     apiClient
-      .getSkill(skillId)
+      .getSkill(skillId, executionFilter)
       .then((result) => {
         if (!cancelled) setDetail(result);
       })
@@ -26,7 +29,7 @@ export function SkillDetailPage({ apiClient }: { apiClient: MarketplaceApiClient
     return () => {
       cancelled = true;
     };
-  }, [apiClient, skillId]);
+  }, [apiClient, skillId, executionFilter]);
 
   if (error) {
     return (
@@ -51,6 +54,7 @@ export function SkillDetailPage({ apiClient }: { apiClient: MarketplaceApiClient
         ← Back to overview
       </Link>
       <h1>{detail.skillId}</h1>
+      <ExecutionFilter value={executionFilter} onChange={setExecutionFilter} />
       <SkillMetadataCard metadata={detail.metadata} />
       {detail.categories.length === 0 && (
         <p role="status">
@@ -59,11 +63,11 @@ export function SkillDetailPage({ apiClient }: { apiClient: MarketplaceApiClient
         </p>
       )}
       <p className="skill-detail-page__intro">
-        Every metric below is shown separately per category — there is no combined score across categories.
+        Every metric below is shown separately per category, agent, model and reasoning setting — there is no combined score across categories.
       </p>
 
       {detail.categories.map((categoryDetail) => (
-        <CategorySection key={categoryDetail.category} detail={categoryDetail} />
+        <CategorySection key={`${categoryDetail.category}-${categoryDetail.execution?.agent}-${categoryDetail.execution?.model}-${categoryDetail.execution?.reasoning_effort}`} detail={categoryDetail} />
       ))}
 
       <p className="skill-detail-page__source">

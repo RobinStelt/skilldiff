@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { aggregateSkillCategory, type StoredRunResult } from "../src/aggregation/metrics.js";
+import { aggregateSkillCategory, aggregateExecutionGroups, type StoredRunResult } from "../src/aggregation/metrics.js";
 
 function baseRecord(overrides: Partial<StoredRunResult> = {}): StoredRunResult {
   return {
@@ -108,4 +108,12 @@ describe("aggregateSkillCategory", () => {
     ];
     expect(aggregateSkillCategory("skill_x", "debugging", mixedVersions).distinctContentHashCount).toBe(2);
   });
+});
+
+
+it("separates agents, models and reasoning settings, including legacy unknown models", () => {
+  const execution = { agent: "codex" as const, model: "model-a", agent_version: "1", reasoning_effort: "medium" };
+  const records = [baseRecord(), baseRecord({ execution }), baseRecord({ execution: { ...execution, model: "model-b" } }), baseRecord({ execution: { ...execution, reasoning_effort: "high" } })];
+  expect(aggregateExecutionGroups("skill_x", "debugging", records).map((group) => group.sampleSize)).toEqual([1, 1, 1, 1]);
+  expect(() => aggregateSkillCategory("skill_x", "debugging", records)).toThrow(/Cannot aggregate/);
 });

@@ -1,6 +1,8 @@
+import { readCodexDefaults, readCurrentCodexModel } from "../agents/codexModel.js";
+import type { Agent, Execution } from "@skilldiff/schema";
+import { parseAgent, resolveAgentBin, buildAgentArgs } from "../agents/adapter.js";
 import pc from "picocolors";
 import { detectIsolationTier, assertSkillSourceOutsideWorkDir, tierRequiresOutsideSourceCheck } from "../isolation/index.js";
-import { resolveClaudeBin } from "../isolation/claudeBinary.js";
 import { buildDockerRunArgs } from "../isolation/dockerRun.js";
 import type { Invocation } from "../orchestration/runOrchestrator.js";
 import { runComparison, cleanupWorkDirCopies } from "../orchestration/runOrchestrator.js";
@@ -28,6 +30,10 @@ export interface RunCommandOptions {
   /** Omit to auto-detect from the project (detectCheckCommand.ts) — an explicit value always wins. */
   checkCommand?: string;
   claudeBin?: string;
+  codexBin?: string;
+  agent?: Agent;
+  model?: string;
+  reasoningEffort?: string;
   endpointUrl?: string;
   dockerImage?: string;
   apiKeyEnvVar?: string;
@@ -45,7 +51,18 @@ function parseCheckCommand(cmd?: string): { cmd: string; args: string[] } | null
 export async function runCommand(options: RunCommandOptions): Promise<void> {
   // --- 8. Consent screen: only on the very first run ---------------------
   let config = loadOrCreateConfig();
-  const claudeBin = resolveClaudeBin(options.claudeBin ?? config.claudeBinOverride ?? undefined);
+  const agent = parseAgent(options.agent ?? config.agent);
+  const claudeBin = resolveAgentBin(agent, agent === "codex" ? options.codexBin ?? config.codexBinOverride ?? undefined : options.claudeBin ?? config.claudeBinOverride ?? undefined);
+  const configuredModel = options.model ?? (agent === "codex" ? config.codexModel : config.claudeModel);
+  const defaults = agent === "codex" && !configuredModel ? (readCurrentCodexModel() ?? await readCodexDefaults(claudeBin, options.workDir)) : null;
+  const execution: Execution = {
+    agent, model: configuredModel ?? defaults?.model ?? "unknown",
+    agent_version: await getClaudeVersion(claudeBin),
+    reasoning_effort: options.reasoningEffort ?? (agent === "codex" ? config.codexReasoningEffort ?? defaults?.effort ?? "medium" : null) ?? null,
+  };
+  buildAgentArgs(execution, options.task);
+  console.log(`Agent: ${execution.agent} | Model: ${execution.model} | Reasoning: ${execution.reasoning_effort ?? "default"}`);
+
   const endpointUrl = options.endpointUrl ?? config.endpointUrl ?? null;
   if (isFirstRun(config)) {
     const decision = await showConsentScreen();
@@ -67,7 +84,7 @@ export async function runCommand(options: RunCommandOptions): Promise<void> {
   let skillId = options.skillId;
   let skillSourceDir = options.skillSourceDir;
   if (!skillId || !skillSourceDir) {
-    const watched = pickRandomWatchedSkill(config);
+    const watched = pickRandomWatchedSkill(config, Math.random, agent);
     if (!watched) {
       throw new Error(
         "No --skill/--skill-source given, and no watched skills registered. " +
@@ -97,7 +114,7 @@ export async function runCommand(options: RunCommandOptions): Promise<void> {
   }
 
   // --- 2. Tiered control-run isolation: actually checked, not guessed ----
-  const tierResult = await detectIsolationTier({ skipContainer: options.noDocker });
+  const tierResult = await detectIsolationTier({ skipContainer: options.noDocker || (agent === "codex" && !options.dockerImage) });
   console.log(pc.dim(`Isolation tier: ${tierResult.tier} (${tierResult.reason})`));
 
   if (tierRequiresOutsideSourceCheck(tierResult.tier) && skillSourceDir) {
@@ -105,41 +122,23 @@ export async function runCommand(options: RunCommandOptions): Promise<void> {
   }
 
   // --- 1. Run orchestration: builds the right invocation per tier --------
-  const buildInvocation = (condition: Condition, workDirCopy: string): Invocation => {
-    // --permission-mode acceptEdits: real, previously-undiscovered bug —
-    // without it, `claude -p` in a non-interactive/headless run has no
-    // way to approve a file edit (no TTY to prompt), so every Edit/Write
-    // tool call is silently denied and the task can never actually get
-    // done regardless of whether the skill helps. Found running this for
-    // real (playwright-skill both conditions "failed" identically —
-    // turned out Claude correctly identified the fix in both but every
-    // Edit call was denied). Safe here specifically because `workDirCopy`
-    // is always a disposable copy (orchestration/runOrchestrator.ts) or a
-    // container mount, never the user's real project — the whole reason
-    // that copy exists is so Claude can act freely on it.
-    const claudeArgs = [
-      "-p",
-      options.task,
-      "--output-format",
-      "json",
-      "--setting-sources",
-      "project",
-      "--permission-mode",
-      "acceptEdits",
-    ];
+  const buildInvocation = (condition: Condition, workDirCopy: string, codexHome?: string): Invocation => {
+    const claudeArgs = buildAgentArgs(execution, options.task);
 
     if (tierResult.tier === "A") {
       // Tier A is built as a docker/podman wrapper around the same claude call.
       const runtime = tierResult.dockerAvailable ? "docker" : "podman";
       const args = buildDockerRunArgs({
         runtime,
-        image: options.dockerImage ?? "skill-ab/claude-runner:latest",
+        agent,
+        codexHome,
+        image: options.dockerImage ?? `skill-ab/${agent}-runner:latest`,
         workDir: workDirCopy,
         skillSourceDir: condition === "with_skill" ? skillSourceDir ?? null : null,
         skillId,
         condition,
-        claudeInvocationArgs: [claudeBin, ...claudeArgs],
-        apiKeyEnvVar: options.apiKeyEnvVar ?? "ANTHROPIC_API_KEY",
+        claudeInvocationArgs: [agent, ...claudeArgs],
+        apiKeyEnvVar: options.apiKeyEnvVar ?? (agent === "codex" ? "CODEX_API_KEY" : "ANTHROPIC_API_KEY"),
       });
       return { bin: runtime, args };
     }
@@ -151,6 +150,8 @@ export async function runCommand(options: RunCommandOptions): Promise<void> {
 
   const result = await runComparison({
     runner: realProcessRunner,
+    agent,
+    execution: agent === "codex" ? execution : undefined,
     buildInvocation,
     originalWorkDir: options.workDir,
     skillId,
@@ -161,6 +162,7 @@ export async function runCommand(options: RunCommandOptions): Promise<void> {
   });
 
   try {
+    if (result.withSkill.execution) Object.assign(execution, result.withSkill.execution);
     // --- 6. Category-specific metrics + automatic category detection ----
     const category = detectCategory({ task: options.task, workDir: options.workDir });
     const sizeBucket = determineSizeBucket(options.workDir);
@@ -178,6 +180,7 @@ export async function runCommand(options: RunCommandOptions): Promise<void> {
     // --- 7. Immediate local benefit ----------------------------------------
     showLocalDelta({
       skillId,
+      execution,
       withSkill: result.withSkill.runOutcome,
       withoutSkill: result.withoutSkill.runOutcome,
     });
@@ -211,7 +214,8 @@ export async function runCommand(options: RunCommandOptions): Promise<void> {
       contentOptIn: config.contentOptIn,
       contentRef: null, // plain-text hosting for blind voting is a Phase 7 topic, deliberately always null here
       orderRandomized: result.orderRandomized,
-      claudeVersion,
+      claudeVersion: agent === "claude" ? claudeVersion : undefined,
+      execution,
       cliVersion: getCliVersion(),
       cliBuildHash,
     });

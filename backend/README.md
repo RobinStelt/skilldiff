@@ -43,3 +43,19 @@ npm run test:integration  # braucht laufendes Postgres + TEST_DATABASE_URL_APP_R
 ```
 
 `test/integration/permissions.test.ts` verifiziert das Akzeptanzkriterium, dass der `app_backend`-Rolle der Zugriff auf `run_result_content` mit einem echten Permission-Fehler verweigert wird. `test/integration/anomaly.test.ts` spielt ein echtes Manipulationsmuster (Account registrieren, 20+ echt signierte Uploads für denselben Skill mit durchgehend "Erfolg") über die echte HTTP-Route durch und prüft, dass der Batch-Anomalie-Scan es markiert **und** dass das nächste Upload desselben Accounts danach ein messbar niedrigeres `weight` bekommt — nicht nur, dass irgendwo ein Flag gesetzt wird.
+
+## Multi-agent measurements
+
+Apply migrations with `npm run migrate` using `MIGRATION_DATABASE_URL` before
+starting this version. Migration 005 adds `run_results.execution` and permits
+null `claude_version` for Codex results. Existing rows default to Claude with
+an unknown model; historical signed payloads remain valid.
+
+`GET /api/skills` and `GET /api/skills/:skillId` accept `agent=claude|codex`
+and an exact `model` filter. Detail and raw export also accept
+`reasoning_effort` (an empty value selects the legacy/null setting). All
+aggregated endpoints, including `/v1` JSON/CSV exports, split each category
+by agent, model and reasoning effort even without filters. Category names
+can therefore occur more than once; identify a cohort by category plus
+execution settings. Raw export links include the complete cohort filter.
+CSV exports add `agent`, `model`, and `reasoning_effort` columns.

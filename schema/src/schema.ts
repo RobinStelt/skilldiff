@@ -1,3 +1,4 @@
+import { executionSchema } from "./execution.js";
 import { z } from "zod";
 
 /**
@@ -126,7 +127,8 @@ const sharedFields = {
   run_id: z.string().min(1),
   order_randomized: z.boolean(),
   timestamp: iso8601Schema,
-  claude_version: z.string().min(1),
+  claude_version: z.string().min(1).optional(),
+  execution: executionSchema.optional(),
   cli_version: z.string().min(1),
   cli_build_hash: z.string().min(1),
 };
@@ -195,6 +197,12 @@ export const runResultUnionSchema = z.discriminatedUnion("category", [
  * is already structurally enforced via the discriminated union above.
  */
 export const runResultSchema = runResultUnionSchema.superRefine((data, ctx) => {
+  if (!data.execution && !data.claude_version) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["execution"], message: "Execution metadata or a legacy Claude version is required" });
+  }
+  if (data.execution?.agent === "codex" && data.claude_version) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["claude_version"], message: "Codex runs cannot declare a Claude version" });
+  }
   if (data.content_ref !== null && data.content_opt_in !== true) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,

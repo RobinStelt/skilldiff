@@ -1,3 +1,5 @@
+import { removeWorkDirCopy } from "../orchestration/runOrchestrator.js";
+import type { Execution } from "@skilldiff/schema";
 import type { LocalConfig, WatchedSkill } from "../config/localConfig.js";
 import { pickRandomWatchedSkill } from "../config/localConfig.js";
 import type { Condition } from "../isolation/types.js";
@@ -22,6 +24,9 @@ export interface UserPromptSubmitDeps {
   detectCheckCommand: (cwd: string) => CheckCommand | null;
   endpointUrl: string | null;
   claudeBin: string;
+  execution?: Execution;
+  foregroundTokenBaseline?: number;
+  turnId?: string;
 }
 
 export type UserPromptSubmitOutcome =
@@ -62,7 +67,7 @@ export function handleUserPromptSubmit(
   const rng = deps.rng ?? Math.random;
   const now = deps.now ?? Date.now;
 
-  const watched: WatchedSkill | null = pickRandomWatchedSkill(deps.config, rng);
+  const watched: WatchedSkill | null = pickRandomWatchedSkill(deps.config, rng, deps.execution?.agent ?? "claude");
   if (!watched) {
     return { status: "skipped", reason: "no_watched_skills" };
   }
@@ -83,6 +88,9 @@ export function handleUserPromptSubmit(
     checkCommand: deps.detectCheckCommand(input.cwd),
     endpointUrl: deps.endpointUrl,
     claudeBin: deps.claudeBin,
+    execution: deps.execution,
+    foregroundTokenBaseline: deps.foregroundTokenBaseline,
+    turnId: deps.turnId,
   };
   saveShadowState(state);
 
@@ -135,6 +143,7 @@ export function handleStop(input: StopInput, deps: StopDeps): StopOutcome {
   if (tokens === null) {
     // A real turn happened but we can't honestly measure it — upload
     // nothing rather than a fabricated zero (see transcriptUsage.ts).
+    removeWorkDirCopy(state.beforeSnapshotDir);
     deleteShadowState(input.session_id);
     return { status: "skipped", reason: "usage_unavailable" };
   }

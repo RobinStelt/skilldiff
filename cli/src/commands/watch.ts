@@ -1,7 +1,9 @@
-import { existsSync, readdirSync, statSync } from "node:fs";
+import { parseAgent } from "../agents/adapter.js";
+import type { Agent } from "@skilldiff/schema";
+import { existsSync, readdirSync, statSync, cpSync, mkdtempSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import pc from "picocolors";
-import { loadOrCreateConfig, addWatchedSkill, removeWatchedSkill, type WatchedSkill } from "../config/localConfig.js";
+import { defaultConfigDir, loadOrCreateConfig, addWatchedSkill, removeWatchedSkill, type WatchedSkill } from "../config/localConfig.js";
 import { hashSkillSourceDir } from "../skill/contentHash.js";
 import { decideWatchSync, type LocalSkill } from "../config/watchSyncDecision.js";
 
@@ -13,26 +15,26 @@ import { decideWatchSync, type LocalSkill } from "../config/watchSyncDecision.js
  * source came from --skill-source or from the watch list, so there's no
  * separate check duplicated here.
  */
-export function watchAddCommand(options: { skillId: string; skillSourceDir: string }): void {
+export function watchAddCommand(options: { skillId: string; skillSourceDir: string; agent?: Agent }): void {
   const config = loadOrCreateConfig();
   const lastKnownHash = hashSkillSourceDir(options.skillSourceDir);
-  addWatchedSkill(config, { skillId: options.skillId, skillSourceDir: options.skillSourceDir, lastKnownHash });
+  addWatchedSkill(config, { agent: parseAgent(options.agent ?? config.agent), skillId: options.skillId, skillSourceDir: options.skillSourceDir, lastKnownHash });
   console.log(pc.green(`✓ Watching "${options.skillId}" (${options.skillSourceDir})`));
 }
 
-export function watchRemoveCommand(options: { skillId: string }): void {
+export function watchRemoveCommand(options: { skillId: string; agent?: Agent }): void {
   const config = loadOrCreateConfig();
-  removeWatchedSkill(config, options.skillId);
+  removeWatchedSkill(config, options.skillId, undefined, parseAgent(options.agent ?? config.agent));
   console.log(pc.green(`✓ No longer watching "${options.skillId}"`));
 }
 
-export function watchListCommand(): void {
+export function watchListCommand(agent?: Agent): void {
   const config = loadOrCreateConfig();
   if (config.watchedSkills.length === 0) {
     console.log(pc.dim("No watched skills. Add one with: skill-ab watch add --skill <id> --source <path>"));
     return;
   }
-  for (const skill of config.watchedSkills) {
+  for (const skill of config.watchedSkills.filter((skill) => (skill.agent ?? "claude") === parseAgent(agent ?? config.agent))) {
     console.log(`${skill.skillId}\t${skill.skillSourceDir}`);
   }
 }
@@ -45,8 +47,8 @@ export function watchListCommand(): void {
  * "what's really installed here", independent of what's registered with
  * `skill-ab watch add`.
  */
-function scanLocallyInstalledSkills(dir: string): LocalSkill[] {
-  const skillsDir = join(dir, ".claude", "skills");
+function scanLocallyInstalledSkills(dir: string, agent: Agent = "claude"): LocalSkill[] {
+  const skillsDir = join(dir, agent === "codex" ? ".agents" : ".claude", "skills");
   if (!existsSync(skillsDir)) return [];
   return readdirSync(skillsDir)
     .filter((name) => statSync(join(skillsDir, name)).isDirectory())
@@ -94,8 +96,9 @@ async function fetchCatalogSkillIds(
  * was last synced — see `watchSyncDecision.ts` for the pure decision
  * logic this wraps.
  */
-export async function watchSyncCommand(options: { dir?: string; endpointUrl?: string }): Promise<void> {
-  const config = loadOrCreateConfig();
+export async function watchSyncCommand(options: { dir?: string; endpointUrl?: string; agent?: Agent }): Promise<void> {
+  let config = loadOrCreateConfig();
+  const agent = parseAgent(options.agent ?? config.agent);
   const endpointUrl = options.endpointUrl ?? config.endpointUrl;
   if (!endpointUrl) {
     throw new Error(
@@ -103,17 +106,17 @@ export async function watchSyncCommand(options: { dir?: string; endpointUrl?: st
     );
   }
 
-  const local = scanLocallyInstalledSkills(options.dir ?? process.cwd());
+  const local = scanLocallyInstalledSkills(options.dir ?? process.cwd(), parseAgent(options.agent ?? config.agent));
   const catalogSkillIds = await fetchCatalogSkillIds(endpointUrl);
-  const decision = decideWatchSync(local, catalogSkillIds, config.watchedSkills);
+  const decision = decideWatchSync(local, catalogSkillIds, config.watchedSkills.filter((skill) => (skill.agent ?? "claude") === agent));
 
   for (const entry of decision.toAdd) {
-    addWatchedSkill(config, { skillId: entry.skillId, skillSourceDir: entry.skillSourceDir, lastKnownHash: entry.hash });
+    config = addWatchedSkill(config, { agent, skillId: entry.skillId, skillSourceDir: cacheSkillSource(entry.skillSourceDir), lastKnownHash: entry.hash });
     console.log(pc.green(`✓ Watching "${entry.skillId}" (${entry.skillSourceDir})`));
   }
   for (const entry of decision.toUpdateHash) {
-    const updated: WatchedSkill = { skillId: entry.skillId, skillSourceDir: entry.skillSourceDir, lastKnownHash: entry.newHash };
-    addWatchedSkill(config, updated);
+    const updated: WatchedSkill = { agent, skillId: entry.skillId, skillSourceDir: cacheSkillSource(entry.skillSourceDir), lastKnownHash: entry.newHash };
+    config = addWatchedSkill(config, updated);
     console.log(
       pc.yellow(
         `⚠ "${entry.skillId}" changed since it was last watched — measurements from now on reflect the new content.`,
@@ -121,10 +124,18 @@ export async function watchSyncCommand(options: { dir?: string; endpointUrl?: st
     );
   }
   for (const skillId of decision.toRemove) {
-    removeWatchedSkill(config, skillId);
+    config = removeWatchedSkill(config, skillId, undefined, agent);
     console.log(pc.dim(`– No longer installed locally, stopped watching "${skillId}"`));
   }
   if (decision.toAdd.length === 0 && decision.toUpdateHash.length === 0 && decision.toRemove.length === 0) {
     console.log(pc.dim("Nothing to sync — watch list already matches what's installed and catalogued."));
   }
+}
+
+function cacheSkillSource(source: string): string {
+  const root = join(defaultConfigDir(), "skill-snapshots");
+  mkdirSync(root, { recursive: true });
+  const destination = mkdtempSync(join(root, "skill-"));
+  cpSync(source, destination, { recursive: true, dereference: true });
+  return destination;
 }
